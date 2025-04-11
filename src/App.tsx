@@ -9,8 +9,10 @@ import { Layout } from "@/components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import RegisterAsset from "./pages/RegisterAsset";
 import Inventory from "./pages/Inventory";
+import Clients from "./pages/Clients";
+import Association from "./pages/Association";
+import Monitoring from "./pages/Monitoring";
 import NotFound from "./pages/NotFound";
-import { v4 as uuidv4 } from "uuid";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +28,9 @@ const App = () => (
               <Route path="/" element={<Dashboard />} />
               <Route path="/register-asset" element={<RegisterAsset />} />
               <Route path="/inventory" element={<Inventory />} />
+              <Route path="/clients" element={<Clients />} />
+              <Route path="/association" element={<Association />} />
+              <Route path="/monitoring" element={<Monitoring />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
