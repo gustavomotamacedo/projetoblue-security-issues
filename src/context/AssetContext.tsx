@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { Asset, AssetStatus, Client, ChipAsset, RouterAsset, AssetType } from "@/types/asset";
 import { v4 as uuidv4 } from "uuid";
@@ -51,7 +50,6 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [clients]);
 
   const addAsset = (assetData: Omit<Asset, "id" | "status">) => {
-    // Create a properly typed new asset based on the type
     let newAsset: Asset;
     
     if (assetData.type === "CHIP") {
@@ -78,27 +76,21 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setAssets((prevAssets: Asset[]) => 
       prevAssets.map(asset => {
         if (asset.id === id) {
-          // Handle specific asset types explicitly
           if (asset.type === "CHIP") {
-            // For CHIP assets
             if (assetData.type && assetData.type !== "CHIP") {
-              // Don't allow type change
               return asset;
             }
             return { ...asset, ...assetData } as ChipAsset;
           } else if (asset.type === "ROTEADOR") {
-            // For ROTEADOR assets
             if (assetData.type && assetData.type !== "ROTEADOR") {
-              // Don't allow type change
               return asset;
             }
             return { ...asset, ...assetData } as RouterAsset;
           }
-          // Handle any unexpected cases by returning original
           return asset;
         }
         return asset;
-      })
+      }) as Asset[]
     );
     toast.success("Ativo atualizado com sucesso!");
   };

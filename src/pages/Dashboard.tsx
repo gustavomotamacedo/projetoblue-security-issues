@@ -1,6 +1,7 @@
 
 import { useAssets } from "@/context/AssetContext";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   LayoutDashboard, 
@@ -9,11 +10,13 @@ import {
   CheckCircle, 
   AlertCircle, 
   XCircle,
-  Clock
+  Clock,
+  FileSpreadsheet
 } from "lucide-react";
+import { exportToExcel } from "@/utils/excelExport";
 
 const Dashboard = () => {
-  const { assets, getAssetsByType, getAssetsByStatus } = useAssets();
+  const { assets, clients, getAssetsByType, getAssetsByStatus } = useAssets();
   
   const totalChips = getAssetsByType("CHIP").length;
   const totalRouters = getAssetsByType("ROTEADOR").length;
@@ -25,11 +28,24 @@ const Dashboard = () => {
     ["SEM DADOS", "BLOQUEADO", "MANUTENÇÃO"].includes(asset.status)
   );
 
+  const handleExportToExcel = () => {
+    exportToExcel({ assets, clients });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-2"
+            onClick={handleExportToExcel}
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Exportar para Excel
+          </Button>
           <Badge variant="outline" className="text-xs">
             <Clock className="h-3 w-3 mr-1" />
             Atualizado: {new Date().toLocaleString('pt-BR')}
