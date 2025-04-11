@@ -1,0 +1,348 @@
+
+import { useState } from "react";
+import { useAssets } from "@/context/AssetContext";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Asset, AssetStatus, AssetType, ChipAsset, RouterAsset } from "@/types/asset";
+import { Download, Filter, MoreHorizontal, Search, Smartphone, Wifi } from "lucide-react";
+
+const Inventory = () => {
+  const { assets, updateAsset, deleteAsset } = useAssets();
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  // Apply filters
+  const filteredAssets = assets.filter((asset) => {
+    // Type filter
+    if (typeFilter !== "all" && asset.type !== typeFilter) {
+      return false;
+    }
+    
+    // Status filter
+    if (statusFilter !== "all" && asset.status !== statusFilter) {
+      return false;
+    }
+    
+    // Search
+    if (search) {
+      const searchLower = search.toLowerCase();
+      
+      if (asset.type === "CHIP") {
+        const chip = asset as ChipAsset;
+        return (
+          chip.iccid.toLowerCase().includes(searchLower) ||
+          chip.phoneNumber.toLowerCase().includes(searchLower) ||
+          chip.carrier.toLowerCase().includes(searchLower)
+        );
+      } else {
+        const router = asset as RouterAsset;
+        return (
+          router.uniqueId.toLowerCase().includes(searchLower) ||
+          router.brand.toLowerCase().includes(searchLower) ||
+          router.model.toLowerCase().includes(searchLower) ||
+          router.ssid.toLowerCase().includes(searchLower)
+        );
+      }
+    }
+    
+    return true;
+  });
+
+  // Status badge styles
+  const getStatusBadgeStyle = (status: AssetStatus) => {
+    switch (status) {
+      case "DISPONÍVEL":
+        return "bg-green-500";
+      case "ALUGADO":
+      case "ASSINATURA":
+        return "bg-telecom-500";
+      case "SEM DADOS":
+        return "bg-amber-500";
+      case "BLOQUEADO":
+        return "bg-red-500";
+      case "MANUTENÇÃO":
+        return "bg-blue-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  // Generate CSV
+  const exportToCSV = () => {
+    // Header row
+    let csvContent = "ID,Tipo,Data de Registro,Status,ICCID/ID Único,Número/Marca,Operadora/Modelo,SSID,Senha\n";
+    
+    // Data rows
+    filteredAssets.forEach((asset) => {
+      const row = [];
+      row.push(asset.id);
+      row.push(asset.type);
+      row.push(asset.registrationDate.split("T")[0]);
+      row.push(asset.status);
+      
+      if (asset.type === "CHIP") {
+        const chip = asset as ChipAsset;
+        row.push(chip.iccid);
+        row.push(chip.phoneNumber);
+        row.push(chip.carrier);
+        row.push(""); // SSID (empty for chips)
+        row.push(""); // Password (empty for chips)
+      } else {
+        const router = asset as RouterAsset;
+        row.push(router.uniqueId);
+        row.push(router.brand);
+        row.push(router.model);
+        row.push(router.ssid);
+        row.push(router.password);
+      }
+      
+      csvContent += row.join(",") + "\n";
+    });
+    
+    // Create download link
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `inventario-${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Inventário</h1>
+          <p className="text-muted-foreground">
+            Gerencie os ativos cadastrados no sistema
+          </p>
+        </div>
+        
+        <Button onClick={exportToCSV} className="flex items-center gap-2">
+          <Download className="h-4 w-4" />
+          <span>Exportar CSV</span>
+        </Button>
+      </div>
+      
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+              <Input
+                placeholder="Buscar ativo..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger>
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
+                  <SelectValue placeholder="Tipo de Ativo" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Tipos</SelectItem>
+                <SelectItem value="CHIP">Chip</SelectItem>
+                <SelectItem value="ROTEADOR">Roteador</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
+                  <SelectValue placeholder="Status" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Status</SelectItem>
+                <SelectItem value="DISPONÍVEL">Disponível</SelectItem>
+                <SelectItem value="ALUGADO">Alugado</SelectItem>
+                <SelectItem value="ASSINATURA">Assinatura</SelectItem>
+                <SelectItem value="SEM DADOS">Sem Dados</SelectItem>
+                <SelectItem value="BLOQUEADO">Bloqueado</SelectItem>
+                <SelectItem value="MANUTENÇÃO">Manutenção</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardContent className="pt-6">
+          {filteredAssets.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Tipo</TableHead>
+                    <TableHead>ID / ICCID</TableHead>
+                    <TableHead>Detalhes</TableHead>
+                    <TableHead>Registro</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAssets.map((asset) => (
+                    <TableRow key={asset.id}>
+                      <TableCell>
+                        {asset.type === "CHIP" ? (
+                          <div className="flex items-center gap-2">
+                            <Smartphone className="h-4 w-4" />
+                            <span>Chip</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Wifi className="h-4 w-4" />
+                            <span>Roteador</span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {asset.type === "CHIP"
+                          ? (asset as ChipAsset).iccid
+                          : (asset as RouterAsset).uniqueId
+                        }
+                      </TableCell>
+                      <TableCell>
+                        {asset.type === "CHIP" ? (
+                          <div>
+                            <div>{(asset as ChipAsset).phoneNumber}</div>
+                            <div className="text-xs text-gray-500">
+                              {(asset as ChipAsset).carrier}
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <div>{(asset as RouterAsset).brand} {(asset as RouterAsset).model}</div>
+                            <div className="text-xs text-gray-500">
+                              SSID: {(asset as RouterAsset).ssid}
+                            </div>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(asset.registrationDate).toLocaleDateString("pt-BR")}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusBadgeStyle(asset.status)}>
+                          {asset.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            
+                            <DropdownMenuItem
+                              onClick={() => 
+                                updateAsset(asset.id, { status: "DISPONÍVEL" })
+                              }
+                            >
+                              Marcar como Disponível
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => 
+                                updateAsset(asset.id, { status: "SEM DADOS" })
+                              }
+                            >
+                              Marcar como Sem Dados
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => 
+                                updateAsset(asset.id, { status: "BLOQUEADO" })
+                              }
+                            >
+                              Marcar como Bloqueado
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => 
+                                updateAsset(asset.id, { status: "MANUTENÇÃO" })
+                              }
+                            >
+                              Marcar como Em Manutenção
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuSeparator />
+                            
+                            <DropdownMenuItem
+                              onClick={() => deleteAsset(asset.id)}
+                              className="text-red-500 focus:text-red-500"
+                            >
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-10">
+              <p className="text-center text-gray-500 mb-4">
+                Nenhum ativo encontrado com os filtros atuais.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearch("");
+                  setTypeFilter("all");
+                  setStatusFilter("all");
+                }}
+              >
+                Limpar Filtros
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default Inventory;
