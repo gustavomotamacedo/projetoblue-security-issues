@@ -1,34 +1,24 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
-import { Asset, AssetStatus, Client, ChipAsset, RouterAsset, AssetType } from "@/types/asset";
-import { v4 as uuidv4 } from "uuid";
+
+import React, { createContext, useState, useEffect } from "react";
+import { Asset, AssetStatus, Client, AssetType } from "@/types/asset";
+import { AssetContextType } from "./AssetContextTypes";
 import { toast } from "@/utils/toast";
+import { 
+  getAssetById, 
+  getAssetsByStatus, 
+  getAssetsByType, 
+  createAsset, 
+  updateAssetInList 
+} from "./assetActions";
+import { 
+  getClientById, 
+  createClient, 
+  updateClientInList 
+} from "./clientActions";
 
-interface AssetContextType {
-  assets: Asset[];
-  clients: Client[];
-  addAsset: (asset: Omit<Asset, "id" | "status">) => void;
-  updateAsset: (id: string, asset: Partial<Asset>) => void;
-  deleteAsset: (id: string) => void;
-  getAssetById: (id: string) => Asset | undefined;
-  getAssetsByStatus: (status: AssetStatus) => Asset[];
-  getAssetsByType: (type: AssetType) => Asset[];
-  addClient: (client: Omit<Client, "id" | "assets">) => void;
-  updateClient: (id: string, client: Partial<Client>) => void;
-  deleteClient: (id: string) => void;
-  getClientById: (id: string) => Client | undefined;
-  associateAssetToClient: (assetId: string, clientId: string) => void;
-  removeAssetFromClient: (assetId: string, clientId: string) => void;
-}
+export const AssetContext = createContext<AssetContextType | undefined>(undefined);
 
-const AssetContext = createContext<AssetContextType | undefined>(undefined);
-
-export const useAssets = () => {
-  const context = useContext(AssetContext);
-  if (context === undefined) {
-    throw new Error("useAssets must be used within an AssetProvider");
-  }
-  return context;
-};
+export { useAssets } from "./useAssets";
 
 export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [assets, setAssets] = useState<Asset[]>(() => {
@@ -50,48 +40,13 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [clients]);
 
   const addAsset = (assetData: Omit<Asset, "id" | "status">) => {
-    let newAsset: Asset;
-    
-    if (assetData.type === "CHIP") {
-      const chipData = assetData as Omit<ChipAsset, "id" | "status">;
-      newAsset = {
-        ...chipData,
-        id: uuidv4(),
-        status: "DISPONÍVEL" as AssetStatus,
-      } as ChipAsset;
-    } else {
-      const routerData = assetData as Omit<RouterAsset, "id" | "status">;
-      newAsset = {
-        ...routerData,
-        id: uuidv4(),
-        status: "DISPONÍVEL" as AssetStatus,
-      } as RouterAsset;
-    }
-    
+    const newAsset = createAsset(assetData);
     setAssets((prevAssets: Asset[]) => [...prevAssets, newAsset]);
     toast.success("Ativo adicionado com sucesso!");
   };
 
   const updateAsset = (id: string, assetData: Partial<Asset>) => {
-    setAssets((prevAssets: Asset[]) => 
-      prevAssets.map(asset => {
-        if (asset.id === id) {
-          if (asset.type === "CHIP") {
-            if (assetData.type && assetData.type !== "CHIP") {
-              return asset;
-            }
-            return { ...asset, ...assetData } as ChipAsset;
-          } else if (asset.type === "ROTEADOR") {
-            if (assetData.type && assetData.type !== "ROTEADOR") {
-              return asset;
-            }
-            return { ...asset, ...assetData } as RouterAsset;
-          }
-          return asset;
-        }
-        return asset;
-      }) as Asset[]
-    );
+    setAssets((prevAssets: Asset[]) => updateAssetInList(prevAssets, id, assetData));
     toast.success("Ativo atualizado com sucesso!");
   };
 
@@ -106,41 +61,22 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     toast.success("Ativo removido com sucesso!");
   };
 
-  const getAssetById = (id: string) => {
-    return assets.find(asset => asset.id === id);
-  };
-
-  const getAssetsByStatus = (status: AssetStatus) => {
-    return assets.filter(asset => asset.status === status);
-  };
-
-  const getAssetsByType = (type: AssetType) => {
-    return assets.filter(asset => asset.type === type);
-  };
-
   const addClient = (clientData: Omit<Client, "id" | "assets">) => {
-    const newClient = {
-      ...clientData,
-      id: uuidv4(),
-      assets: [],
-    };
-    
+    const newClient = createClient(clientData);
     setClients((prevClients: Client[]) => [...prevClients, newClient]);
     toast.success("Cliente adicionado com sucesso!");
   };
 
   const updateClient = (id: string, clientData: Partial<Client>) => {
-    setClients((prevClients: Client[]) => prevClients.map(client => 
-      client.id === id ? { ...client, ...clientData } : client
-    ));
+    setClients((prevClients: Client[]) => updateClientInList(prevClients, id, clientData));
     toast.success("Cliente atualizado com sucesso!");
   };
 
   const deleteClient = (id: string) => {
-    const clientToDelete = clients.find(client => client.id === id);
+    const clientToDelete = getClientById(clients, id);
     if (clientToDelete) {
       clientToDelete.assets.forEach(assetId => {
-        const asset = getAssetById(assetId);
+        const asset = getAssetById(assets, assetId);
         if (asset) {
           updateAsset(assetId, { 
             status: "DISPONÍVEL", 
@@ -154,12 +90,8 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     toast.success("Cliente removido com sucesso!");
   };
 
-  const getClientById = (id: string) => {
-    return clients.find(client => client.id === id);
-  };
-
   const associateAssetToClient = (assetId: string, clientId: string) => {
-    const asset = getAssetById(assetId);
+    const asset = getAssetById(assets, assetId);
     
     if (asset) {
       updateAsset(assetId, { 
@@ -167,7 +99,7 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         clientId 
       });
       
-      const client = getClientById(clientId);
+      const client = getClientById(clients, clientId);
       if (client && !client.assets.includes(assetId)) {
         updateClient(clientId, {
           assets: [...client.assets, assetId]
@@ -184,7 +116,7 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       clientId: undefined 
     });
     
-    const client = getClientById(clientId);
+    const client = getClientById(clients, clientId);
     if (client) {
       updateClient(clientId, {
         assets: client.assets.filter(id => id !== assetId)
@@ -200,13 +132,13 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addAsset,
     updateAsset,
     deleteAsset,
-    getAssetById,
-    getAssetsByStatus,
-    getAssetsByType,
+    getAssetById: (id: string) => getAssetById(assets, id),
+    getAssetsByStatus: (status: AssetStatus) => getAssetsByStatus(assets, status),
+    getAssetsByType: (type: AssetType) => getAssetsByType(assets, type),
     addClient,
     updateClient,
     deleteClient,
-    getClientById,
+    getClientById: (id: string) => getClientById(clients, id),
     associateAssetToClient,
     removeAssetFromClient,
   };
