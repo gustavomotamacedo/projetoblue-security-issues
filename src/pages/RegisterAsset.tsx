@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAssets } from "@/context/AssetContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,10 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Smartphone, Wifi } from "lucide-react";
 import { z } from "zod";
-import { ChipAsset, RouterAsset } from "@/types/asset";
-import { toast } from "@/components/ui/sonner";
+import { Asset, AssetType } from "@/types/asset";
+import { toast } from "@/utils/toast";
 
-// Chip validation schema
 const chipSchema = z.object({
   iccid: z.string()
     .length(20, "ICCID deve ter exatamente 20 dígitos")
@@ -20,7 +18,6 @@ const chipSchema = z.object({
   carrier: z.string().min(1, "Operadora é obrigatória"),
 });
 
-// Router validation schema
 const routerSchema = z.object({
   uniqueId: z.string().min(1, "ID é obrigatório"),
   brand: z.string().min(1, "Marca é obrigatória"),
@@ -37,7 +34,6 @@ const RegisterAsset = () => {
   const { assets, addAsset } = useAssets();
   const [activeTab, setActiveTab] = useState<string>("chip");
 
-  // Chip state
   const [chipData, setChipData] = useState({
     iccid: "",
     phoneNumber: "",
@@ -45,7 +41,6 @@ const RegisterAsset = () => {
   });
   const [chipErrors, setChipErrors] = useState<Record<string, string>>({});
 
-  // Router state
   const [routerData, setRouterData] = useState({
     uniqueId: "",
     brand: "",
@@ -55,16 +50,14 @@ const RegisterAsset = () => {
   });
   const [routerErrors, setRouterErrors] = useState<Record<string, string>>({});
 
-  // Handle chip form submission
   const handleChipSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
       chipSchema.parse(chipData);
       
-      // Check for duplicate ICCID
       const isDuplicate = assets.some(
-        (asset) => asset.type === "CHIP" && (asset as ChipAsset).iccid === chipData.iccid
+        (asset) => asset.type === "CHIP" && 'iccid' in asset && asset.iccid === chipData.iccid
       );
       
       if (isDuplicate) {
@@ -72,19 +65,16 @@ const RegisterAsset = () => {
         return;
       }
       
-      // Clear errors if validation passes
       setChipErrors({});
       
-      // Add the chip
       addAsset({
         type: "CHIP",
         registrationDate: new Date().toISOString(),
         iccid: chipData.iccid,
         phoneNumber: chipData.phoneNumber,
         carrier: chipData.carrier,
-      });
+      } as Omit<Asset, "id" | "status">);
       
-      // Reset form
       setChipData({
         iccid: "",
         phoneNumber: "",
@@ -104,16 +94,14 @@ const RegisterAsset = () => {
     }
   };
 
-  // Handle router form submission
   const handleRouterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
       routerSchema.parse(routerData);
       
-      // Check for duplicate uniqueId
       const isDuplicate = assets.some(
-        (asset) => asset.type === "ROTEADOR" && (asset as RouterAsset).uniqueId === routerData.uniqueId
+        (asset) => asset.type === "ROTEADOR" && 'uniqueId' in asset && asset.uniqueId === routerData.uniqueId
       );
       
       if (isDuplicate) {
@@ -121,10 +109,8 @@ const RegisterAsset = () => {
         return;
       }
       
-      // Clear errors if validation passes
       setRouterErrors({});
       
-      // Add the router
       addAsset({
         type: "ROTEADOR",
         registrationDate: new Date().toISOString(),
@@ -133,9 +119,8 @@ const RegisterAsset = () => {
         model: routerData.model,
         ssid: routerData.ssid,
         password: routerData.password,
-      });
+      } as Omit<Asset, "id" | "status">);
       
-      // Reset form
       setRouterData({
         uniqueId: "",
         brand: "",

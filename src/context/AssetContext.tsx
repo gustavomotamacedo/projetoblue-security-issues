@@ -1,8 +1,7 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
-import { Asset, AssetStatus, Client } from "@/types/asset";
+import { Asset, AssetStatus, Client, ChipAsset, RouterAsset } from "@/types/asset";
 import { v4 as uuidv4 } from "uuid";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/utils/toast";
 
 interface AssetContextType {
   assets: Asset[];
@@ -42,7 +41,6 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return savedClients ? JSON.parse(savedClients) : [];
   });
 
-  // Save to localStorage whenever assets or clients change
   useEffect(() => {
     localStorage.setItem("assets", JSON.stringify(assets));
   }, [assets]);
@@ -72,7 +70,6 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const deleteAsset = (id: string) => {
     setAssets(assets.filter(asset => asset.id !== id));
     
-    // Also remove from any client that might have it
     setClients(clients.map(client => ({
       ...client,
       assets: client.assets.filter(assetId => assetId !== id)
@@ -112,7 +109,6 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteClient = (id: string) => {
-    // Free all assets associated with this client
     const clientToDelete = clients.find(client => client.id === id);
     if (clientToDelete) {
       clientToDelete.assets.forEach(assetId => {
@@ -135,7 +131,6 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const associateAssetToClient = (assetId: string, clientId: string) => {
-    // Update the asset
     const asset = getAssetById(assetId);
     
     if (asset) {
@@ -144,7 +139,6 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         clientId 
       });
       
-      // Update the client
       const client = getClientById(clientId);
       if (client && !client.assets.includes(assetId)) {
         updateClient(clientId, {
@@ -157,13 +151,11 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const removeAssetFromClient = (assetId: string, clientId: string) => {
-    // Update the asset
     updateAsset(assetId, { 
       status: "DISPONÍVEL",
       clientId: undefined 
     });
     
-    // Update the client
     const client = getClientById(clientId);
     if (client) {
       updateClient(clientId, {
