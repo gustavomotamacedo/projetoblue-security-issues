@@ -1,11 +1,12 @@
+
 import { useState } from "react";
-import { useAssets } from "@/context/AssetContext";
+import { useAssets } from "@/context/useAssets";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Smartphone, Wifi } from "lucide-react";
+import { Smartphone, Wifi, Shield, KeyRound, Hash } from "lucide-react";
 import { z } from "zod";
 import { Asset, AssetType } from "@/types/asset";
 import { toast } from "@/utils/toast";
@@ -28,6 +29,29 @@ const routerSchema = z.object({
     .regex(/[a-zA-Z]/, "Senha deve conter pelo menos uma letra")
     .regex(/[0-9]/, "Senha deve conter pelo menos um número")
     .regex(/[^a-zA-Z0-9]/, "Senha deve conter pelo menos um caractere especial"),
+  ipAddress: z.string()
+    .regex(/^(\d{1,3}\.){3}\d{1,3}$/, "Formato de IP inválido")
+    .refine(
+      (ip) => {
+        const parts = ip.split(".");
+        return parts.every(part => parseInt(part) >= 0 && parseInt(part) <= 255);
+      },
+      { message: "IP deve estar entre 0 e 255 para cada octeto" }
+    ),
+  adminUser: z.string()
+    .min(3, "Usuário deve ter pelo menos 3 caracteres")
+    .regex(/^[a-zA-Z0-9_-]+$/, "Usuário deve conter apenas letras, números, hífens e underscores"),
+  adminPassword: z.string()
+    .min(8, "Senha deve ter pelo menos 8 caracteres")
+    .regex(/[a-zA-Z]/, "Senha deve conter pelo menos uma letra")
+    .regex(/[0-9]/, "Senha deve conter pelo menos um número")
+    .regex(/[^a-zA-Z0-9]/, "Senha deve conter pelo menos um caractere especial"),
+  imei: z.string()
+    .regex(/^\d{15}$/, "IMEI deve conter exatamente 15 dígitos numéricos"),
+  serialNumber: z.string()
+    .min(5, "SN deve ter pelo menos 5 caracteres")
+    .max(30, "SN deve ter no máximo 30 caracteres")
+    .regex(/^[a-zA-Z0-9]+$/, "SN deve conter apenas letras e números"),
 });
 
 const RegisterAsset = () => {
@@ -47,6 +71,11 @@ const RegisterAsset = () => {
     model: "",
     ssid: "",
     password: "",
+    ipAddress: "",
+    adminUser: "",
+    adminPassword: "",
+    imei: "",
+    serialNumber: "",
   });
   const [routerErrors, setRouterErrors] = useState<Record<string, string>>({});
 
@@ -80,6 +109,7 @@ const RegisterAsset = () => {
         phoneNumber: "",
         carrier: "",
       });
+      toast.success("Chip cadastrado com sucesso!");
       
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -119,6 +149,11 @@ const RegisterAsset = () => {
         model: routerData.model,
         ssid: routerData.ssid,
         password: routerData.password,
+        ipAddress: routerData.ipAddress,
+        adminUser: routerData.adminUser,
+        adminPassword: routerData.adminPassword,
+        imei: routerData.imei,
+        serialNumber: routerData.serialNumber,
       } as Omit<Asset, "id" | "status">);
       
       setRouterData({
@@ -127,7 +162,13 @@ const RegisterAsset = () => {
         model: "",
         ssid: "",
         password: "",
+        ipAddress: "",
+        adminUser: "",
+        adminPassword: "",
+        imei: "",
+        serialNumber: "",
       });
+      toast.success("Roteador cadastrado com sucesso!");
       
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -232,78 +273,183 @@ const RegisterAsset = () => {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleRouterSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="uniqueId">ID Único</Label>
-                    <Input
-                      id="uniqueId"
-                      placeholder="Digite o ID único do roteador"
-                      value={routerData.uniqueId}
-                      onChange={(e) => setRouterData({ ...routerData, uniqueId: e.target.value })}
-                      className={routerErrors.uniqueId ? "border-red-500" : ""}
-                    />
-                    {routerErrors.uniqueId && (
-                      <p className="text-sm text-red-500">{routerErrors.uniqueId}</p>
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="uniqueId">ID Único</Label>
+                      <Input
+                        id="uniqueId"
+                        placeholder="Digite o ID único do roteador"
+                        value={routerData.uniqueId}
+                        onChange={(e) => setRouterData({ ...routerData, uniqueId: e.target.value })}
+                        className={routerErrors.uniqueId ? "border-red-500" : ""}
+                      />
+                      {routerErrors.uniqueId && (
+                        <p className="text-sm text-red-500">{routerErrors.uniqueId}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="brand">Marca</Label>
+                      <Input
+                        id="brand"
+                        placeholder="Digite a marca do roteador"
+                        value={routerData.brand}
+                        onChange={(e) => setRouterData({ ...routerData, brand: e.target.value })}
+                        className={routerErrors.brand ? "border-red-500" : ""}
+                      />
+                      {routerErrors.brand && (
+                        <p className="text-sm text-red-500">{routerErrors.brand}</p>
+                      )}
+                    </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="brand">Marca</Label>
-                    <Input
-                      id="brand"
-                      placeholder="Digite a marca do roteador"
-                      value={routerData.brand}
-                      onChange={(e) => setRouterData({ ...routerData, brand: e.target.value })}
-                      className={routerErrors.brand ? "border-red-500" : ""}
-                    />
-                    {routerErrors.brand && (
-                      <p className="text-sm text-red-500">{routerErrors.brand}</p>
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="model">Modelo</Label>
+                      <Input
+                        id="model"
+                        placeholder="Digite o modelo do roteador"
+                        value={routerData.model}
+                        onChange={(e) => setRouterData({ ...routerData, model: e.target.value })}
+                        className={routerErrors.model ? "border-red-500" : ""}
+                      />
+                      {routerErrors.model && (
+                        <p className="text-sm text-red-500">{routerErrors.model}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="serialNumber" className="flex items-center gap-1">
+                        <Hash className="h-4 w-4" />
+                        SN (Número de Série)
+                      </Label>
+                      <Input
+                        id="serialNumber"
+                        placeholder="Digite o número de série"
+                        value={routerData.serialNumber}
+                        onChange={(e) => setRouterData({ ...routerData, serialNumber: e.target.value })}
+                        className={routerErrors.serialNumber ? "border-red-500" : ""}
+                      />
+                      {routerErrors.serialNumber && (
+                        <p className="text-sm text-red-500">{routerErrors.serialNumber}</p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        Entre 5 e 30 caracteres, apenas letras e números
+                      </p>
+                    </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="model">Modelo</Label>
-                    <Input
-                      id="model"
-                      placeholder="Digite o modelo do roteador"
-                      value={routerData.model}
-                      onChange={(e) => setRouterData({ ...routerData, model: e.target.value })}
-                      className={routerErrors.model ? "border-red-500" : ""}
-                    />
-                    {routerErrors.model && (
-                      <p className="text-sm text-red-500">{routerErrors.model}</p>
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="ssid">SSID</Label>
+                      <Input
+                        id="ssid"
+                        placeholder="Digite o SSID do roteador"
+                        value={routerData.ssid}
+                        onChange={(e) => setRouterData({ ...routerData, ssid: e.target.value })}
+                        className={routerErrors.ssid ? "border-red-500" : ""}
+                      />
+                      {routerErrors.ssid && (
+                        <p className="text-sm text-red-500">{routerErrors.ssid}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Senha Wi-Fi</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Digite a senha do Wi-Fi"
+                        value={routerData.password}
+                        onChange={(e) => setRouterData({ ...routerData, password: e.target.value })}
+                        className={routerErrors.password ? "border-red-500" : ""}
+                      />
+                      {routerErrors.password && (
+                        <p className="text-sm text-red-500">{routerErrors.password}</p>
+                      )}
+                    </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="ssid">SSID</Label>
-                    <Input
-                      id="ssid"
-                      placeholder="Digite o SSID do roteador"
-                      value={routerData.ssid}
-                      onChange={(e) => setRouterData({ ...routerData, ssid: e.target.value })}
-                      className={routerErrors.ssid ? "border-red-500" : ""}
-                    />
-                    {routerErrors.ssid && (
-                      <p className="text-sm text-red-500">{routerErrors.ssid}</p>
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="ipAddress" className="flex items-center gap-1">
+                        <Shield className="h-4 w-4" />
+                        IP Gerência
+                      </Label>
+                      <Input
+                        id="ipAddress"
+                        placeholder="Ex: 192.168.0.1"
+                        value={routerData.ipAddress}
+                        onChange={(e) => setRouterData({ ...routerData, ipAddress: e.target.value })}
+                        className={routerErrors.ipAddress ? "border-red-500" : ""}
+                      />
+                      {routerErrors.ipAddress && (
+                        <p className="text-sm text-red-500">{routerErrors.ipAddress}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="imei" className="flex items-center gap-1">
+                        <KeyRound className="h-4 w-4" />
+                        IMEI
+                      </Label>
+                      <Input
+                        id="imei"
+                        placeholder="Digite o IMEI (15 dígitos)"
+                        value={routerData.imei}
+                        onChange={(e) => setRouterData({ ...routerData, imei: e.target.value })}
+                        className={routerErrors.imei ? "border-red-500" : ""}
+                      />
+                      {routerErrors.imei && (
+                        <p className="text-sm text-red-500">{routerErrors.imei}</p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        IMEI deve conter exatamente 15 dígitos numéricos
+                      </p>
+                    </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Digite a senha do roteador"
-                      value={routerData.password}
-                      onChange={(e) => setRouterData({ ...routerData, password: e.target.value })}
-                      className={routerErrors.password ? "border-red-500" : ""}
-                    />
-                    {routerErrors.password && (
-                      <p className="text-sm text-red-500">{routerErrors.password}</p>
-                    )}
-                    <p className="text-xs text-gray-500">
-                      A senha deve conter pelo menos 8 caracteres, uma letra, um número e um caractere especial
-                    </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="adminUser" className="flex items-center gap-1">
+                        <KeyRound className="h-4 w-4" />
+                        Usuário admin roteador
+                      </Label>
+                      <Input
+                        id="adminUser"
+                        placeholder="Digite o usuário admin"
+                        value={routerData.adminUser}
+                        onChange={(e) => setRouterData({ ...routerData, adminUser: e.target.value })}
+                        className={routerErrors.adminUser ? "border-red-500" : ""}
+                      />
+                      {routerErrors.adminUser && (
+                        <p className="text-sm text-red-500">{routerErrors.adminUser}</p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        Mínimo 3 caracteres, apenas letras, números, hífens e underscores
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="adminPassword" className="flex items-center gap-1">
+                        <KeyRound className="h-4 w-4" />
+                        Senha admin roteador
+                      </Label>
+                      <Input
+                        id="adminPassword"
+                        type="password"
+                        placeholder="Digite a senha admin"
+                        value={routerData.adminPassword}
+                        onChange={(e) => setRouterData({ ...routerData, adminPassword: e.target.value })}
+                        className={routerErrors.adminPassword ? "border-red-500" : ""}
+                      />
+                      {routerErrors.adminPassword && (
+                        <p className="text-sm text-red-500">{routerErrors.adminPassword}</p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        Mínimo 8 caracteres, com letras, números e caracteres especiais
+                      </p>
+                    </div>
                   </div>
                   
                   <Button type="submit" className="w-full">Cadastrar Roteador</Button>
@@ -318,3 +464,4 @@ const RegisterAsset = () => {
 };
 
 export default RegisterAsset;
+

@@ -32,6 +32,11 @@ export interface RouterAsset extends BaseAsset {
   model: string;
   ssid: string;
   password: string;
+  ipAddress?: string;     // IP Gerência
+  adminUser?: string;     // Usuário admin roteador
+  adminPassword?: string; // Senha admin roteador
+  imei?: string;          // IMEI
+  serialNumber?: string;  // SN (Número de Série)
 }
 
 export type Asset = ChipAsset | RouterAsset;
