@@ -70,24 +70,31 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } as RouterAsset;
     }
     
-    setAssets(prevAssets => [...prevAssets, newAsset]);
+    setAssets((prevAssets: Asset[]) => [...prevAssets, newAsset]);
     toast.success("Ativo adicionado com sucesso!");
   };
 
   const updateAsset = (id: string, assetData: Partial<Asset>) => {
-    setAssets(prevAssets => 
+    setAssets((prevAssets: Asset[]) => 
       prevAssets.map(asset => {
         if (asset.id === id) {
-          // Ensure we maintain the correct type when updating
-          if (asset.type === "CHIP" && assetData.type === "CHIP") {
+          // Handle specific asset types explicitly
+          if (asset.type === "CHIP") {
+            // For CHIP assets
+            if (assetData.type && assetData.type !== "CHIP") {
+              // Don't allow type change
+              return asset;
+            }
             return { ...asset, ...assetData } as ChipAsset;
-          } else if (asset.type === "ROTEADOR" && assetData.type === "ROTEADOR") {
+          } else if (asset.type === "ROTEADOR") {
+            // For ROTEADOR assets
+            if (assetData.type && assetData.type !== "ROTEADOR") {
+              // Don't allow type change
+              return asset;
+            }
             return { ...asset, ...assetData } as RouterAsset;
-          } else if (!assetData.type) {
-            // If type is not being updated, maintain the original type
-            return { ...asset, ...assetData };
           }
-          // If trying to change type (shouldn't happen), maintain original
+          // Handle any unexpected cases by returning original
           return asset;
         }
         return asset;
@@ -97,9 +104,9 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteAsset = (id: string) => {
-    setAssets(prevAssets => prevAssets.filter(asset => asset.id !== id));
+    setAssets((prevAssets: Asset[]) => prevAssets.filter(asset => asset.id !== id));
     
-    setClients(prevClients => prevClients.map(client => ({
+    setClients((prevClients: Client[]) => prevClients.map(client => ({
       ...client,
       assets: client.assets.filter(assetId => assetId !== id)
     })));
@@ -126,12 +133,12 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       assets: [],
     };
     
-    setClients(prevClients => [...prevClients, newClient]);
+    setClients((prevClients: Client[]) => [...prevClients, newClient]);
     toast.success("Cliente adicionado com sucesso!");
   };
 
   const updateClient = (id: string, clientData: Partial<Client>) => {
-    setClients(prevClients => prevClients.map(client => 
+    setClients((prevClients: Client[]) => prevClients.map(client => 
       client.id === id ? { ...client, ...clientData } : client
     ));
     toast.success("Cliente atualizado com sucesso!");
@@ -151,7 +158,7 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
     }
     
-    setClients(prevClients => prevClients.filter(client => client.id !== id));
+    setClients((prevClients: Client[]) => prevClients.filter(client => client.id !== id));
     toast.success("Cliente removido com sucesso!");
   };
 
