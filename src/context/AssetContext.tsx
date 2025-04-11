@@ -1,5 +1,6 @@
+
 import React, { createContext, useState, useContext, useEffect } from "react";
-import { Asset, AssetStatus, Client, ChipAsset, RouterAsset } from "@/types/asset";
+import { Asset, AssetStatus, Client, ChipAsset, RouterAsset, AssetType } from "@/types/asset";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "@/utils/toast";
 
@@ -11,7 +12,7 @@ interface AssetContextType {
   deleteAsset: (id: string) => void;
   getAssetById: (id: string) => Asset | undefined;
   getAssetsByStatus: (status: AssetStatus) => Asset[];
-  getAssetsByType: (type: "CHIP" | "ROTEADOR") => Asset[];
+  getAssetsByType: (type: AssetType) => Asset[];
   addClient: (client: Omit<Client, "id" | "assets">) => void;
   updateClient: (id: string, client: Partial<Client>) => void;
   deleteClient: (id: string) => void;
@@ -50,27 +51,55 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [clients]);
 
   const addAsset = (assetData: Omit<Asset, "id" | "status">) => {
-    const newAsset = {
-      ...assetData,
-      id: uuidv4(),
-      status: "DISPONÍVEL" as AssetStatus,
-    } as Asset;
+    // Create a properly typed new asset based on the type
+    let newAsset: Asset;
     
-    setAssets([...assets, newAsset]);
+    if (assetData.type === "CHIP") {
+      const chipData = assetData as Omit<ChipAsset, "id" | "status">;
+      newAsset = {
+        ...chipData,
+        id: uuidv4(),
+        status: "DISPONÍVEL" as AssetStatus,
+      } as ChipAsset;
+    } else {
+      const routerData = assetData as Omit<RouterAsset, "id" | "status">;
+      newAsset = {
+        ...routerData,
+        id: uuidv4(),
+        status: "DISPONÍVEL" as AssetStatus,
+      } as RouterAsset;
+    }
+    
+    setAssets(prevAssets => [...prevAssets, newAsset]);
     toast.success("Ativo adicionado com sucesso!");
   };
 
   const updateAsset = (id: string, assetData: Partial<Asset>) => {
-    setAssets(assets.map(asset => 
-      asset.id === id ? { ...asset, ...assetData } : asset
-    ));
+    setAssets(prevAssets => 
+      prevAssets.map(asset => {
+        if (asset.id === id) {
+          // Ensure we maintain the correct type when updating
+          if (asset.type === "CHIP" && assetData.type === "CHIP") {
+            return { ...asset, ...assetData } as ChipAsset;
+          } else if (asset.type === "ROTEADOR" && assetData.type === "ROTEADOR") {
+            return { ...asset, ...assetData } as RouterAsset;
+          } else if (!assetData.type) {
+            // If type is not being updated, maintain the original type
+            return { ...asset, ...assetData };
+          }
+          // If trying to change type (shouldn't happen), maintain original
+          return asset;
+        }
+        return asset;
+      })
+    );
     toast.success("Ativo atualizado com sucesso!");
   };
 
   const deleteAsset = (id: string) => {
-    setAssets(assets.filter(asset => asset.id !== id));
+    setAssets(prevAssets => prevAssets.filter(asset => asset.id !== id));
     
-    setClients(clients.map(client => ({
+    setClients(prevClients => prevClients.map(client => ({
       ...client,
       assets: client.assets.filter(assetId => assetId !== id)
     })));
@@ -86,7 +115,7 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return assets.filter(asset => asset.status === status);
   };
 
-  const getAssetsByType = (type: "CHIP" | "ROTEADOR") => {
+  const getAssetsByType = (type: AssetType) => {
     return assets.filter(asset => asset.type === type);
   };
 
@@ -97,12 +126,12 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       assets: [],
     };
     
-    setClients([...clients, newClient]);
+    setClients(prevClients => [...prevClients, newClient]);
     toast.success("Cliente adicionado com sucesso!");
   };
 
   const updateClient = (id: string, clientData: Partial<Client>) => {
-    setClients(clients.map(client => 
+    setClients(prevClients => prevClients.map(client => 
       client.id === id ? { ...client, ...clientData } : client
     ));
     toast.success("Cliente atualizado com sucesso!");
@@ -122,7 +151,7 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
     }
     
-    setClients(clients.filter(client => client.id !== id));
+    setClients(prevClients => prevClients.filter(client => client.id !== id));
     toast.success("Cliente removido com sucesso!");
   };
 
