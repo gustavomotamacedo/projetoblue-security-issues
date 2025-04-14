@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAssets } from "@/context/useAssets";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -413,11 +412,11 @@ const RegisterAsset = () => {
                     <div className="space-y-2">
                       <Label htmlFor="adminUser" className="flex items-center gap-1">
                         <KeyRound className="h-4 w-4" />
-                        Usuário admin roteador
+                        Usuário administrador
                       </Label>
                       <Input
                         id="adminUser"
-                        placeholder="Digite o usuário admin"
+                        placeholder="Digite o usuário administrador"
                         value={routerData.adminUser}
                         onChange={(e) => setRouterData({ ...routerData, adminUser: e.target.value })}
                         className={routerErrors.adminUser ? "border-red-500" : ""}
@@ -433,12 +432,12 @@ const RegisterAsset = () => {
                     <div className="space-y-2">
                       <Label htmlFor="adminPassword" className="flex items-center gap-1">
                         <KeyRound className="h-4 w-4" />
-                        Senha admin roteador
+                        Senha de administrador
                       </Label>
                       <Input
                         id="adminPassword"
                         type="password"
-                        placeholder="Digite a senha admin"
+                        placeholder="Digite a senha de administrador"
                         value={routerData.adminPassword}
                         onChange={(e) => setRouterData({ ...routerData, adminPassword: e.target.value })}
                         className={routerErrors.adminPassword ? "border-red-500" : ""}
@@ -464,4 +463,3 @@ const RegisterAsset = () => {
 };
 
 export default RegisterAsset;
-
