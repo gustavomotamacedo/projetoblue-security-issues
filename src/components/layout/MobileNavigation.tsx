@@ -10,7 +10,8 @@ import {
   Link as LinkIcon,
   AlertTriangle,
   Menu,
-  X
+  X,
+  Calendar
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -25,6 +26,7 @@ export function MobileNavigation() {
     { href: "/inventory", icon: <Warehouse size={20} />, title: "Inventário" },
     { href: "/clients", icon: <Users size={20} />, title: "Clientes" },
     { href: "/association", icon: <LinkIcon size={20} />, title: "Vincular Ativos" },
+    { href: "/subscriptions", icon: <Calendar size={20} />, title: "Assinaturas" },
     { href: "/monitoring", icon: <AlertTriangle size={20} />, title: "Monitoramento" },
   ];
 

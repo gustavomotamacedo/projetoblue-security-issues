@@ -7,7 +7,8 @@ import {
   Warehouse, 
   Users, 
   Link as LinkIcon,
-  AlertTriangle
+  AlertTriangle,
+  Calendar
 } from "lucide-react";
 
 type NavItemProps = {
@@ -49,6 +50,7 @@ export function Sidebar() {
     { href: "/inventory", icon: <Warehouse size={20} />, title: "Inventário" },
     { href: "/clients", icon: <Users size={20} />, title: "Clientes" },
     { href: "/association", icon: <LinkIcon size={20} />, title: "Vincular Ativos" },
+    { href: "/subscriptions", icon: <Calendar size={20} />, title: "Assinaturas" },
     { href: "/monitoring", icon: <AlertTriangle size={20} />, title: "Monitoramento" },
   ];
 
