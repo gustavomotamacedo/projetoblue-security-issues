@@ -11,12 +11,17 @@ import {
   AlertCircle, 
   XCircle,
   Clock,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Calendar,
+  ArrowRight
 } from "lucide-react";
 import { exportToExcel } from "@/utils/excelExport";
+import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
-  const { assets, clients, getAssetsByType, getAssetsByStatus } = useAssets();
+  const { assets, clients, getAssetsByType, getAssetsByStatus, getExpiredSubscriptions } = useAssets();
+  const navigate = useNavigate();
   
   const totalChips = getAssetsByType("CHIP").length;
   const totalRouters = getAssetsByType("ROTEADOR").length;
@@ -27,6 +32,8 @@ const Dashboard = () => {
   const problemAssets = assets.filter(asset => 
     ["SEM DADOS", "BLOQUEADO", "MANUTENÇÃO"].includes(asset.status)
   );
+  
+  const expiredSubscriptions = getExpiredSubscriptions();
 
   const handleExportToExcel = () => {
     exportToExcel({ assets, clients });
@@ -177,6 +184,77 @@ const Dashboard = () => {
         </Card>
         
         <Card className="col-span-1">
+          <CardHeader className="flex items-center justify-between">
+            <div>
+              <CardTitle>Assinaturas Expiradas</CardTitle>
+              <CardDescription>
+                Assinaturas que precisam ser renovadas
+              </CardDescription>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center"
+              onClick={() => navigate("/subscriptions")}
+            >
+              Ver todas <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {expiredSubscriptions.length > 0 ? (
+              <div className="space-y-2">
+                {expiredSubscriptions.slice(0, 5).map((asset) => {
+                  const client = asset.clientId ? clients.find(c => c.id === asset.clientId) : null;
+                  return (
+                    <div 
+                      key={asset.id} 
+                      className="flex items-center justify-between p-2 border rounded-md"
+                    >
+                      <div className="flex items-center space-x-2">
+                        {asset.type === "CHIP" ? (
+                          <Smartphone className="h-4 w-4" />
+                        ) : (
+                          <Wifi className="h-4 w-4" />
+                        )}
+                        <div>
+                          <p className="text-sm font-medium">
+                            {asset.type === "CHIP" 
+                              ? `CHIP: ${(asset as any).phoneNumber}` 
+                              : `ROTEADOR: ${(asset as any).model}`
+                            }
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {client?.name || "Cliente não encontrado"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge className="bg-red-500">
+                          Expirado
+                        </Badge>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {asset.subscription ? format(new Date(asset.subscription.endDate), "dd/MM/yyyy") : ""}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {expiredSubscriptions.length > 5 && (
+                  <p className="text-xs text-center text-gray-500 mt-2">
+                    + {expiredSubscriptions.length - 5} outras assinaturas expiradas
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-32 text-gray-500">
+                <Calendar className="h-8 w-8 mb-2" />
+                <p className="text-sm">Nenhuma assinatura expirada</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        <Card className="col-span-1 md:col-span-2">
           <CardHeader>
             <CardTitle>Status dos Ativos</CardTitle>
             <CardDescription>

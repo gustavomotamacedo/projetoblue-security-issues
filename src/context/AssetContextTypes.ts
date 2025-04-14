@@ -1,5 +1,5 @@
 
-import { Asset, AssetStatus, Client, AssetType } from "@/types/asset";
+import { Asset, AssetStatus, Client, AssetType, SubscriptionInfo } from "@/types/asset";
 
 export interface AssetContextType {
   assets: Asset[];
@@ -14,6 +14,9 @@ export interface AssetContextType {
   updateClient: (id: string, client: Partial<Client>) => void;
   deleteClient: (id: string) => void;
   getClientById: (id: string) => Client | undefined;
-  associateAssetToClient: (assetId: string, clientId: string) => void;
+  associateAssetToClient: (assetId: string, clientId: string, subscription?: SubscriptionInfo) => void;
   removeAssetFromClient: (assetId: string, clientId: string) => void;
+  getExpiredSubscriptions: () => Asset[];
+  returnAssetsToStock: (assetIds: string[]) => void;
+  extendSubscription: (assetId: string, newEndDate: string) => void;
 }

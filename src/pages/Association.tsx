@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { useAssets } from "@/context/AssetContext";
-import { Asset, Client } from "@/types/asset";
+import { Asset, Client, SubscriptionInfo, SubscriptionType } from "@/types/asset";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +19,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, LinkIcon, Unlink, UserCheck } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Search, 
+  LinkIcon, 
+  Unlink, 
+  UserCheck, 
+  Calendar,
+  CalendarClock
+} from "lucide-react";
+import { format, addMonths, addYears } from "date-fns";
 
 export default function Association() {
   const { 
@@ -35,6 +49,49 @@ export default function Association() {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [availableAssets, setAvailableAssets] = useState<Asset[]>([]);
+  
+  // Subscription states
+  const [subscriptionType, setSubscriptionType] = useState<SubscriptionType>("MENSAL");
+  const [startDate, setStartDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+  const [endDate, setEndDate] = useState<string>("");
+  const [eventName, setEventName] = useState<string>("");
+  const [autoRenew, setAutoRenew] = useState<boolean>(false);
+  
+  // Calculate end date when subscription type changes
+  useEffect(() => {
+    const start = new Date(startDate);
+    let end;
+    
+    if (subscriptionType === "MENSAL") {
+      end = addMonths(start, 1);
+    } else if (subscriptionType === "ANUAL") {
+      end = addYears(start, 1);
+    } else {
+      // For custom, keep the existing end date or set to 1 month by default
+      end = endDate ? new Date(endDate) : addMonths(start, 1);
+    }
+    
+    setEndDate(format(end, "yyyy-MM-dd"));
+  }, [subscriptionType, startDate]);
+  
+  // Update start date effect
+  useEffect(() => {
+    if (new Date(startDate) > new Date(endDate)) {
+      // If start date is after end date, adjust end date
+      const start = new Date(startDate);
+      let end;
+      
+      if (subscriptionType === "MENSAL") {
+        end = addMonths(start, 1);
+      } else if (subscriptionType === "ANUAL") {
+        end = addYears(start, 1);
+      } else {
+        end = addMonths(start, 1);
+      }
+      
+      setEndDate(format(end, "yyyy-MM-dd"));
+    }
+  }, [startDate, endDate, subscriptionType]);
   
   // Filter assets to only show available ones
   useEffect(() => {
@@ -64,10 +121,22 @@ export default function Association() {
   // Handle asset association
   const handleAssociateAsset = () => {
     if (selectedAsset && selectedClient) {
-      associateAssetToClient(selectedAsset.id, selectedClient.id);
+      const subscription: SubscriptionInfo = {
+        type: subscriptionType,
+        startDate,
+        endDate,
+        event: eventName || undefined,
+        autoRenew
+      };
+      
+      associateAssetToClient(selectedAsset.id, selectedClient.id, subscription);
+      
       // Reset selections after association
       setSelectedAsset(null);
       setSelectedClient(null);
+      setSubscriptionType("MENSAL");
+      setEventName("");
+      setAutoRenew(false);
     }
   };
   
@@ -80,6 +149,10 @@ export default function Association() {
   
   const handleRemoveAssetFromClient = (assetId: string, clientId: string) => {
     removeAssetFromClient(assetId, clientId);
+  };
+
+  const formatDateToDisplay = (dateString: string) => {
+    return format(new Date(dateString), "dd/MM/yyyy");
   };
 
   return (
@@ -112,13 +185,14 @@ export default function Association() {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Detalhes</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Assinatura</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {clientAssets.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                         Este cliente não possui ativos vinculados.
                       </TableCell>
                     </TableRow>
@@ -140,6 +214,21 @@ export default function Association() {
                              "bg-gray-100 text-gray-800"}`}>
                             {asset.status}
                           </span>
+                        </TableCell>
+                        <TableCell>
+                          {asset.subscription ? (
+                            <div className="text-xs">
+                              <div className="font-medium">{asset.subscription.type}</div>
+                              <div className="text-gray-500">
+                                {formatDateToDisplay(asset.subscription.startDate)} - {formatDateToDisplay(asset.subscription.endDate)}
+                              </div>
+                              {asset.subscription.event && (
+                                <div className="text-gray-500">Evento: {asset.subscription.event}</div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-500">Não definida</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -302,13 +391,13 @@ export default function Association() {
         </div>
       )}
       
-      {/* Association Action */}
+      {/* Association Action with Subscription Options */}
       {selectedAsset && selectedClient && !viewingClientId && (
         <div className="mt-8 flex flex-col items-center justify-center p-6 bg-telecom-50 rounded-lg">
           <div className="text-center mb-4">
             <h3 className="text-lg font-medium">Confirmar Vinculação</h3>
             <p className="text-gray-500">
-              Você está prestes a vincular o ativo ao cliente:
+              Você está prestes a vincular o ativo ao cliente com as seguintes condições:
             </p>
           </div>
           
@@ -329,6 +418,85 @@ export default function Association() {
               <p className="text-sm text-gray-500">
                 {selectedClient.documentType}: {selectedClient.document}
               </p>
+            </div>
+          </div>
+          
+          {/* Subscription Options */}
+          <div className="w-full max-w-2xl bg-white p-4 rounded-lg border border-gray-200 mb-4">
+            <h4 className="font-medium mb-3 flex items-center">
+              <CalendarClock className="h-4 w-4 mr-2" />
+              Opções de Vinculação
+            </h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="subscriptionType">Tipo de Vinculação</Label>
+                <Select 
+                  value={subscriptionType} 
+                  onValueChange={(value) => setSubscriptionType(value as SubscriptionType)}
+                >
+                  <SelectTrigger id="subscriptionType">
+                    <SelectValue placeholder="Selecione o tipo de vinculação" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MENSAL">Aluguel Mensal</SelectItem>
+                    <SelectItem value="ANUAL">Assinatura Anual</SelectItem>
+                    <SelectItem value="PERSONALIZADO">Período Personalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="event">Evento (opcional)</Label>
+                <Input
+                  id="event"
+                  placeholder="Ex: Conferência Anual"
+                  value={eventName}
+                  onChange={(e) => setEventName(e.target.value)}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="startDate">Data Inicial</Label>
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="endDate">Data Final</Label>
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    min={startDate}
+                  />
+                </div>
+              </div>
+              
+              <div className="md:col-span-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="autoRenew"
+                    checked={autoRenew}
+                    onChange={(e) => setAutoRenew(e.target.checked)}
+                    className="rounded text-telecom-600 focus:ring-telecom-500"
+                  />
+                  <Label htmlFor="autoRenew" className="text-sm font-normal">
+                    Renovar automaticamente ao expirar
+                  </Label>
+                </div>
+              </div>
             </div>
           </div>
           

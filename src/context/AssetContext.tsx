@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useEffect } from "react";
-import { Asset, AssetStatus, Client, AssetType } from "@/types/asset";
+import { Asset, AssetStatus, Client, AssetType, SubscriptionInfo } from "@/types/asset";
 import { AssetContextType } from "./AssetContextTypes";
 import { toast } from "@/utils/toast";
 import { 
@@ -38,6 +38,27 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem("clients", JSON.stringify(clients));
   }, [clients]);
+
+  // Check for expired subscriptions when assets change
+  useEffect(() => {
+    const currentDate = new Date().toISOString();
+    const updatedAssets = assets.map(asset => {
+      if (asset.subscription && asset.subscription.endDate < currentDate && !asset.subscription.isExpired) {
+        return {
+          ...asset,
+          subscription: {
+            ...asset.subscription,
+            isExpired: true
+          }
+        };
+      }
+      return asset;
+    });
+
+    if (JSON.stringify(updatedAssets) !== JSON.stringify(assets)) {
+      setAssets(updatedAssets);
+    }
+  }, [assets]);
 
   const addAsset = (assetData: Omit<Asset, "id" | "status">) => {
     const newAsset = createAsset(assetData);
@@ -80,7 +101,8 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (asset) {
           updateAsset(assetId, { 
             status: "DISPONÍVEL", 
-            clientId: undefined 
+            clientId: undefined,
+            subscription: undefined
           });
         }
       });
@@ -90,13 +112,19 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     toast.success("Cliente removido com sucesso!");
   };
 
-  const associateAssetToClient = (assetId: string, clientId: string) => {
+  const associateAssetToClient = (assetId: string, clientId: string, subscription?: SubscriptionInfo) => {
     const asset = getAssetById(assets, assetId);
     
     if (asset) {
+      const status = subscription?.type === "ANUAL" ? "ASSINATURA" : "ALUGADO";
+      
       updateAsset(assetId, { 
-        status: asset.type === "CHIP" ? "ALUGADO" : "ASSINATURA",
-        clientId 
+        status,
+        clientId,
+        subscription: subscription ? {
+          ...subscription,
+          isExpired: false
+        } : undefined
       });
       
       const client = getClientById(clients, clientId);
@@ -113,7 +141,8 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const removeAssetFromClient = (assetId: string, clientId: string) => {
     updateAsset(assetId, { 
       status: "DISPONÍVEL",
-      clientId: undefined 
+      clientId: undefined,
+      subscription: undefined
     });
     
     const client = getClientById(clients, clientId);
@@ -124,6 +153,63 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     
     toast.success("Ativo desvinculado do cliente com sucesso!");
+  };
+
+  const getExpiredSubscriptions = () => {
+    return assets.filter(asset => 
+      asset.subscription?.isExpired === true
+    );
+  };
+
+  const returnAssetsToStock = (assetIds: string[]) => {
+    let updated = false;
+    
+    const updatedAssets = assets.map(asset => {
+      if (assetIds.includes(asset.id)) {
+        updated = true;
+        
+        // Find client to remove asset from their list
+        if (asset.clientId) {
+          const client = getClientById(clients, asset.clientId);
+          if (client) {
+            setClients(prevClients => 
+              updateClientInList(
+                prevClients, 
+                asset.clientId as string, 
+                { assets: client.assets.filter(id => id !== asset.id) }
+              )
+            );
+          }
+        }
+        
+        return {
+          ...asset,
+          status: "DISPONÍVEL",
+          clientId: undefined,
+          subscription: undefined
+        };
+      }
+      return asset;
+    });
+    
+    if (updated) {
+      setAssets(updatedAssets);
+      toast.success("Ativos retornados ao estoque com sucesso!");
+    }
+  };
+
+  const extendSubscription = (assetId: string, newEndDate: string) => {
+    const asset = getAssetById(assets, assetId);
+    if (asset && asset.subscription) {
+      updateAsset(assetId, {
+        subscription: {
+          ...asset.subscription,
+          endDate: newEndDate,
+          isExpired: false
+        }
+      });
+      toast.success("Assinatura estendida com sucesso!");
+    }
   };
 
   const value = {
@@ -141,6 +227,9 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     getClientById: (id: string) => getClientById(clients, id),
     associateAssetToClient,
     removeAssetFromClient,
+    getExpiredSubscriptions,
+    returnAssetsToStock,
+    extendSubscription,
   };
 
   return <AssetContext.Provider value={value}>{children}</AssetContext.Provider>;

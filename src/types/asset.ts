@@ -9,6 +9,17 @@ export type AssetStatus =
 
 export type AssetType = "CHIP" | "ROTEADOR";
 
+export type SubscriptionType = "MENSAL" | "ANUAL" | "PERSONALIZADO";
+
+export interface SubscriptionInfo {
+  type: SubscriptionType;
+  startDate: string;
+  endDate: string;
+  event?: string;
+  isExpired?: boolean;
+  autoRenew?: boolean;
+}
+
 export interface BaseAsset {
   id: string;
   type: AssetType;
@@ -16,6 +27,7 @@ export interface BaseAsset {
   status: AssetStatus;
   notes?: string;
   clientId?: string;
+  subscription?: SubscriptionInfo;
 }
 
 export interface ChipAsset extends BaseAsset {
