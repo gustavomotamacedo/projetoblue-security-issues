@@ -100,7 +100,7 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const asset = getAssetById(assets, assetId);
         if (asset) {
           updateAsset(assetId, { 
-            status: "DISPONÍVEL", 
+            status: "DISPONÍVEL" as AssetStatus, 
             clientId: undefined,
             subscription: undefined
           });
@@ -116,7 +116,7 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const asset = getAssetById(assets, assetId);
     
     if (asset) {
-      const status = subscription?.type === "ANUAL" ? "ASSINATURA" : "ALUGADO";
+      const status: AssetStatus = subscription?.type === "ANUAL" ? "ASSINATURA" : "ALUGADO";
       
       updateAsset(assetId, { 
         status,
@@ -140,7 +140,7 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const removeAssetFromClient = (assetId: string, clientId: string) => {
     updateAsset(assetId, { 
-      status: "DISPONÍVEL",
+      status: "DISPONÍVEL" as AssetStatus,
       clientId: undefined,
       subscription: undefined
     });
@@ -184,7 +184,7 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         return {
           ...asset,
-          status: "DISPONÍVEL",
+          status: "DISPONÍVEL" as AssetStatus,
           clientId: undefined,
           subscription: undefined
         };
@@ -193,7 +193,7 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
     
     if (updated) {
-      setAssets(updatedAssets);
+      setAssets(updatedAssets as Asset[]);
       toast.success("Ativos retornados ao estoque com sucesso!");
     }
   };
