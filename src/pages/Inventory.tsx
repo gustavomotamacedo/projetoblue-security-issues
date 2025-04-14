@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Asset, AssetStatus, AssetType, ChipAsset, RouterAsset } from "@/types/asset";
-import { Download, Filter, MoreHorizontal, Pencil, Search, Smartphone, Wifi } from "lucide-react";
+import { Download, Filter, MoreHorizontal, Pencil, Search, Smartphone, Wifi, AlertTriangle } from "lucide-react";
 import EditAssetDialog from "@/components/inventory/EditAssetDialog";
 
 const Inventory = () => {
@@ -253,7 +253,15 @@ const Inventory = () => {
                           </div>
                         ) : (
                           <div>
-                            <div>{(asset as RouterAsset).brand} {(asset as RouterAsset).model}</div>
+                            <div className="flex items-center gap-2">
+                              {(asset as RouterAsset).brand} {(asset as RouterAsset).model}
+                              {(asset as RouterAsset).hasWeakPassword && (
+                                <div className="flex items-center text-orange-500 text-xs">
+                                  <AlertTriangle className="h-4 w-4" />
+                                  <span className="ml-1">Senha fraca</span>
+                                </div>
+                              )}
+                            </div>
                             <div className="text-xs text-gray-500">
                               SSID: {(asset as RouterAsset).ssid}
                             </div>

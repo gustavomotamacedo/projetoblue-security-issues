@@ -1,4 +1,3 @@
-
 export type AssetStatus = 
   | "DISPONÍVEL" 
   | "ALUGADO" 
@@ -49,6 +48,7 @@ export interface RouterAsset extends BaseAsset {
   adminPassword?: string; // Senha admin roteador
   imei?: string;          // IMEI
   serialNumber?: string;  // SN (Número de Série)
+  hasWeakPassword?: boolean; // Flag for weak passwords
 }
 
 export type Asset = ChipAsset | RouterAsset;

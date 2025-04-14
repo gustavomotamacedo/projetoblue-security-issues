@@ -5,10 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Smartphone, Wifi, Shield, KeyRound, Hash } from "lucide-react";
+import { Smartphone, Wifi, Shield, KeyRound, Hash, AlertTriangle } from "lucide-react";
 import { z } from "zod";
 import { Asset, AssetType } from "@/types/asset";
 import { toast } from "@/utils/toast";
+import { checkPasswordStrength } from "@/utils/passwordStrength";
 
 const chipSchema = z.object({
   iccid: z.string()
@@ -23,11 +24,7 @@ const routerSchema = z.object({
   brand: z.string().min(1, "Marca é obrigatória"),
   model: z.string().min(1, "Modelo é obrigatório"),
   ssid: z.string().min(1, "SSID é obrigatório"),
-  password: z.string()
-    .min(8, "Senha deve ter pelo menos 8 caracteres")
-    .regex(/[a-zA-Z]/, "Senha deve conter pelo menos uma letra")
-    .regex(/[0-9]/, "Senha deve conter pelo menos um número")
-    .regex(/[^a-zA-Z0-9]/, "Senha deve conter pelo menos um caractere especial"),
+  password: z.string().min(1, "Senha é obrigatória"),
   ipAddress: z.string()
     .regex(/^(\d{1,3}\.){3}\d{1,3}$/, "Formato de IP inválido")
     .refine(
@@ -75,6 +72,7 @@ const RegisterAsset = () => {
     adminPassword: "",
     imei: "",
     serialNumber: "",
+    hasWeakPassword: false,
   });
   const [routerErrors, setRouterErrors] = useState<Record<string, string>>({});
 
@@ -140,6 +138,8 @@ const RegisterAsset = () => {
       
       setRouterErrors({});
       
+      const passwordStrength = checkPasswordStrength(routerData.password);
+      
       addAsset({
         type: "ROTEADOR",
         registrationDate: new Date().toISOString(),
@@ -153,7 +153,14 @@ const RegisterAsset = () => {
         adminPassword: routerData.adminPassword,
         imei: routerData.imei,
         serialNumber: routerData.serialNumber,
+        hasWeakPassword: passwordStrength === 'weak',
       } as Omit<Asset, "id" | "status">);
+      
+      if (passwordStrength === 'weak') {
+        toast.warning("Ativo cadastrado com senha fraca. Recomenda-se alterar para uma senha mais forte.");
+      } else {
+        toast.success("Roteador cadastrado com sucesso!");
+      }
       
       setRouterData({
         uniqueId: "",
@@ -166,8 +173,8 @@ const RegisterAsset = () => {
         adminPassword: "",
         imei: "",
         serialNumber: "",
+        hasWeakPassword: false,
       });
-      toast.success("Roteador cadastrado com sucesso!");
       
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -354,17 +361,41 @@ const RegisterAsset = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="password">Senha Wi-Fi</Label>
+                      <Label htmlFor="password" className="flex items-center gap-2">
+                        Senha Wi-Fi
+                        {routerData.password && checkPasswordStrength(routerData.password) === 'weak' && (
+                          <div className="flex items-center text-red-500 text-xs gap-1">
+                            <AlertTriangle className="h-4 w-4" />
+                            <span>Senha fraca</span>
+                          </div>
+                        )}
+                      </Label>
                       <Input
                         id="password"
                         type="password"
                         placeholder="Digite a senha do Wi-Fi"
                         value={routerData.password}
-                        onChange={(e) => setRouterData({ ...routerData, password: e.target.value })}
-                        className={routerErrors.password ? "border-red-500" : ""}
+                        onChange={(e) => {
+                          const newPassword = e.target.value;
+                          setRouterData({ 
+                            ...routerData, 
+                            password: newPassword,
+                            hasWeakPassword: checkPasswordStrength(newPassword) === 'weak'
+                          });
+                        }}
+                        className={`${routerErrors.password ? "border-red-500" : ""} ${
+                          routerData.password && checkPasswordStrength(routerData.password) === 'weak' 
+                            ? "border-orange-500" 
+                            : ""
+                        }`}
                       />
                       {routerErrors.password && (
                         <p className="text-sm text-red-500">{routerErrors.password}</p>
+                      )}
+                      {routerData.password && checkPasswordStrength(routerData.password) === 'weak' && (
+                        <p className="text-sm text-orange-500">
+                          Recomendado: Use uma senha com pelo menos 8 caracteres, incluindo letras, números e caracteres especiais
+                        </p>
                       )}
                     </div>
                   </div>
