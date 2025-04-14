@@ -28,27 +28,26 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Asset, AssetStatus, AssetType, ChipAsset, RouterAsset } from "@/types/asset";
-import { Download, Filter, MoreHorizontal, Search, Smartphone, Wifi } from "lucide-react";
+import { Download, Filter, MoreHorizontal, Pencil, Search, Smartphone, Wifi } from "lucide-react";
+import EditAssetDialog from "@/components/inventory/EditAssetDialog";
 
 const Inventory = () => {
   const { assets, updateAsset, deleteAsset } = useAssets();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  // Apply filters
   const filteredAssets = assets.filter((asset) => {
-    // Type filter
     if (typeFilter !== "all" && asset.type !== typeFilter) {
       return false;
     }
     
-    // Status filter
     if (statusFilter !== "all" && asset.status !== statusFilter) {
       return false;
     }
     
-    // Search
     if (search) {
       const searchLower = search.toLowerCase();
       
@@ -73,7 +72,6 @@ const Inventory = () => {
     return true;
   });
 
-  // Status badge styles
   const getStatusBadgeStyle = (status: AssetStatus) => {
     switch (status) {
       case "DISPONÍVEL":
@@ -92,12 +90,9 @@ const Inventory = () => {
     }
   };
 
-  // Generate CSV
   const exportToCSV = () => {
-    // Header row
     let csvContent = "ID,Tipo,Data de Registro,Status,ICCID/ID Único,Número/Marca,Operadora/Modelo,SSID,Senha\n";
     
-    // Data rows
     filteredAssets.forEach((asset) => {
       const row = [];
       row.push(asset.id);
@@ -110,8 +105,7 @@ const Inventory = () => {
         row.push(chip.iccid);
         row.push(chip.phoneNumber);
         row.push(chip.carrier);
-        row.push(""); // SSID (empty for chips)
-        row.push(""); // Password (empty for chips)
+        row.push("");
       } else {
         const router = asset as RouterAsset;
         row.push(router.uniqueId);
@@ -124,7 +118,6 @@ const Inventory = () => {
       csvContent += row.join(",") + "\n";
     });
     
-    // Create download link
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -134,6 +127,16 @@ const Inventory = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleEditAsset = (asset: Asset) => {
+    setSelectedAsset(asset);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleCloseEditDialog = () => {
+    setIsEditDialogOpen(false);
+    setSelectedAsset(null);
   };
 
   return (
@@ -277,6 +280,16 @@ const Inventory = () => {
                             <DropdownMenuSeparator />
                             
                             <DropdownMenuItem
+                              className="flex items-center gap-2"
+                              onClick={() => handleEditAsset(asset)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                              Editar ativo
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator />
+                            
+                            <DropdownMenuItem
                               onClick={() => 
                                 updateAsset(asset.id, { status: "DISPONÍVEL" })
                               }
@@ -340,6 +353,12 @@ const Inventory = () => {
           )}
         </CardContent>
       </Card>
+
+      <EditAssetDialog 
+        asset={selectedAsset}
+        isOpen={isEditDialogOpen}
+        onClose={handleCloseEditDialog}
+      />
     </div>
   );
 };
