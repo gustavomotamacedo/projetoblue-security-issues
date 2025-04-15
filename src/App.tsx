@@ -13,6 +13,7 @@ import Clients from "./pages/Clients";
 import Association from "./pages/Association";
 import Subscriptions from "./pages/Subscriptions";
 import Monitoring from "./pages/Monitoring";
+import History from "./pages/History";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/association" element={<Association />} />
               <Route path="/subscriptions" element={<Subscriptions />} />
               <Route path="/monitoring" element={<Monitoring />} />
+              <Route path="/history" element={<History />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

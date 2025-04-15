@@ -1,3 +1,4 @@
+
 import { useAssets } from "@/context/AssetContext";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,14 +31,23 @@ import { Badge } from "@/components/ui/badge";
 import { Asset, AssetStatus, AssetType, ChipAsset, RouterAsset } from "@/types/asset";
 import { Download, Filter, MoreHorizontal, Pencil, Search, Smartphone, Wifi, AlertTriangle } from "lucide-react";
 import EditAssetDialog from "@/components/inventory/EditAssetDialog";
+import AssetDetailsDialog from "@/components/inventory/AssetDetailsDialog";
 
 const Inventory = () => {
   const { assets, updateAsset, deleteAsset } = useAssets();
   const [search, setSearch] = useState("");
+  const [phoneSearch, setPhoneSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+
+  const formatPhoneNumber = (phone: string): string => {
+    // Remove all non-digit characters
+    const digitsOnly = phone.replace(/\D/g, '');
+    return digitsOnly;
+  };
 
   const filteredAssets = assets.filter((asset) => {
     if (typeFilter !== "all" && asset.type !== typeFilter) {
@@ -46,6 +56,19 @@ const Inventory = () => {
     
     if (statusFilter !== "all" && asset.status !== statusFilter) {
       return false;
+    }
+    
+    // Phone number search for chips
+    if (phoneSearch && asset.type === "CHIP") {
+      const chip = asset as ChipAsset;
+      const formattedSearchPhone = formatPhoneNumber(phoneSearch);
+      const formattedAssetPhone = formatPhoneNumber(chip.phoneNumber);
+      
+      // Check if the formatted phone numbers match (ignoring length differences)
+      if (!formattedAssetPhone.endsWith(formattedSearchPhone) && 
+          !formattedSearchPhone.endsWith(formattedAssetPhone)) {
+        return false;
+      }
     }
     
     if (search) {
@@ -134,8 +157,18 @@ const Inventory = () => {
     setIsEditDialogOpen(true);
   };
 
+  const handleViewAssetDetails = (asset: Asset) => {
+    setSelectedAsset(asset);
+    setIsDetailsDialogOpen(true);
+  };
+
   const handleCloseEditDialog = () => {
     setIsEditDialogOpen(false);
+    setSelectedAsset(null);
+  };
+
+  const handleCloseDetailsDialog = () => {
+    setIsDetailsDialogOpen(false);
     setSelectedAsset(null);
   };
 
@@ -160,7 +193,7 @@ const Inventory = () => {
           <CardTitle>Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
               <Input
@@ -203,6 +236,19 @@ const Inventory = () => {
               </SelectContent>
             </Select>
           </div>
+          
+          {/* Phone number search for chips */}
+          {(typeFilter === "all" || typeFilter === "CHIP") && (
+            <div className="relative max-w-md">
+              <Smartphone className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+              <Input
+                placeholder="Buscar por número do chip (com ou sem DDD)..."
+                value={phoneSearch}
+                onChange={(e) => setPhoneSearch(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
       
@@ -223,8 +269,12 @@ const Inventory = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredAssets.map((asset) => (
-                    <TableRow key={asset.id}>
-                      <TableCell>
+                    <TableRow 
+                      key={asset.id}
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => handleViewAssetDetails(asset)}
+                    >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         {asset.type === "CHIP" ? (
                           <div className="flex items-center gap-2">
                             <Smartphone className="h-4 w-4" />
@@ -276,7 +326,7 @@ const Inventory = () => {
                           {asset.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm">
@@ -351,6 +401,7 @@ const Inventory = () => {
                 variant="outline"
                 onClick={() => {
                   setSearch("");
+                  setPhoneSearch("");
                   setTypeFilter("all");
                   setStatusFilter("all");
                 }}
@@ -366,6 +417,12 @@ const Inventory = () => {
         asset={selectedAsset}
         isOpen={isEditDialogOpen}
         onClose={handleCloseEditDialog}
+      />
+      
+      <AssetDetailsDialog
+        asset={selectedAsset}
+        isOpen={isDetailsDialogOpen}
+        onClose={handleCloseDetailsDialog}
       />
     </div>
   );

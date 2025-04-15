@@ -17,7 +17,7 @@ export function Header() {
           </div>
           <div className="hidden md:block">
             <p className="text-sm font-medium">Admin</p>
-            <p className="text-xs text-gray-500">admin@telecomnexus.com</p>
+            <p className="text-xs text-gray-500">admin@operadoralegal.com</p>
           </div>
         </div>
       </div>

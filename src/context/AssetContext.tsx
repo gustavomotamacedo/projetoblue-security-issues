@@ -1,8 +1,10 @@
 
 import React, { createContext, useState, useEffect } from "react";
-import { Asset, AssetStatus, Client, AssetType, SubscriptionInfo } from "@/types/asset";
+import { Asset, AssetStatus, Client, AssetType, SubscriptionInfo, ChipAsset, RouterAsset } from "@/types/asset";
 import { AssetContextType } from "./AssetContextTypes";
+import { AssetHistoryEntry } from "@/types/assetHistory";
 import { toast } from "@/utils/toast";
+import { v4 as uuidv4 } from "uuid";
 import { 
   getAssetById, 
   getAssetsByStatus, 
@@ -31,6 +33,11 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return savedClients ? JSON.parse(savedClients) : [];
   });
 
+  const [history, setHistory] = useState<AssetHistoryEntry[]>(() => {
+    const savedHistory = localStorage.getItem("assetHistory");
+    return savedHistory ? JSON.parse(savedHistory) : [];
+  });
+
   useEffect(() => {
     localStorage.setItem("assets", JSON.stringify(assets));
   }, [assets]);
@@ -38,6 +45,10 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem("clients", JSON.stringify(clients));
   }, [clients]);
+
+  useEffect(() => {
+    localStorage.setItem("assetHistory", JSON.stringify(history));
+  }, [history]);
 
   // Check for expired subscriptions when assets change
   useEffect(() => {
@@ -112,10 +123,34 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     toast.success("Cliente removido com sucesso!");
   };
 
+  const addHistoryEntry = (entryData: Omit<AssetHistoryEntry, "id" | "timestamp">) => {
+    const newEntry: AssetHistoryEntry = {
+      ...entryData,
+      id: uuidv4(),
+      timestamp: new Date().toISOString()
+    };
+    
+    setHistory(prevHistory => [...prevHistory, newEntry]);
+    toast.success("Histórico registrado com sucesso!");
+  };
+
+  const getAssetHistory = (assetId: string) => {
+    return history.filter(entry => 
+      entry.assetIds.includes(assetId)
+    ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  };
+
+  const getClientHistory = (clientId: string) => {
+    return history.filter(entry => 
+      entry.clientId === clientId
+    ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  };
+
   const associateAssetToClient = (assetId: string, clientId: string, subscription?: SubscriptionInfo) => {
     const asset = getAssetById(assets, assetId);
+    const client = getClientById(clients, clientId);
     
-    if (asset) {
+    if (asset && client) {
       const status: AssetStatus = subscription?.type === "ANUAL" ? "ASSINATURA" : "ALUGADO";
       
       updateAsset(assetId, { 
@@ -127,32 +162,70 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } : undefined
       });
       
-      const client = getClientById(clients, clientId);
-      if (client && !client.assets.includes(assetId)) {
+      if (!client.assets.includes(assetId)) {
         updateClient(clientId, {
           assets: [...client.assets, assetId]
         });
       }
+      
+      // Create history entry
+      const assetIdentifier = asset.type === "CHIP" 
+        ? (asset as ChipAsset).iccid 
+        : (asset as RouterAsset).uniqueId;
+        
+      addHistoryEntry({
+        clientId,
+        clientName: client.name,
+        assetIds: [assetId],
+        assets: [{
+          id: assetId,
+          type: asset.type,
+          identifier: assetIdentifier
+        }],
+        operationType: status === "ASSINATURA" ? "ASSINATURA" : "ALUGUEL",
+        comments: `Ativo ${assetIdentifier} associado ao cliente ${client.name}`
+      });
       
       toast.success("Ativo vinculado ao cliente com sucesso!");
     }
   };
 
   const removeAssetFromClient = (assetId: string, clientId: string) => {
-    updateAsset(assetId, { 
-      status: "DISPONÍVEL" as AssetStatus,
-      clientId: undefined,
-      subscription: undefined
-    });
-    
+    const asset = getAssetById(assets, assetId);
     const client = getClientById(clients, clientId);
-    if (client) {
+    
+    if (asset && client) {
+      updateAsset(assetId, { 
+        status: "DISPONÍVEL" as AssetStatus,
+        clientId: undefined,
+        subscription: undefined
+      });
+      
       updateClient(clientId, {
         assets: client.assets.filter(id => id !== assetId)
       });
+      
+      // Create history entry
+      const assetIdentifier = asset.type === "CHIP" 
+        ? (asset as ChipAsset).iccid 
+        : (asset as RouterAsset).uniqueId;
+        
+      addHistoryEntry({
+        clientId,
+        clientName: client.name,
+        assetIds: [assetId],
+        assets: [{
+          id: assetId,
+          type: asset.type,
+          identifier: assetIdentifier
+        }],
+        operationType: asset.status === "ASSINATURA" ? "ASSINATURA" : "ALUGUEL",
+        event: "Retorno ao estoque",
+        comments: `Ativo ${assetIdentifier} removido do cliente ${client.name}`
+      });
+      
+      toast.success("Ativo desvinculado do cliente com sucesso!");
     }
-    
-    toast.success("Ativo desvinculado do cliente com sucesso!");
   };
 
   const getExpiredSubscriptions = () => {
@@ -179,6 +252,25 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 { assets: client.assets.filter(id => id !== asset.id) }
               )
             );
+            
+            // Create history entry
+            const assetIdentifier = asset.type === "CHIP" 
+              ? (asset as ChipAsset).iccid 
+              : (asset as RouterAsset).uniqueId;
+              
+            addHistoryEntry({
+              clientId: asset.clientId,
+              clientName: client.name,
+              assetIds: [asset.id],
+              assets: [{
+                id: asset.id,
+                type: asset.type,
+                identifier: assetIdentifier
+              }],
+              operationType: asset.status === "ASSINATURA" ? "ASSINATURA" : "ALUGUEL",
+              event: "Retorno ao estoque",
+              comments: `Ativo ${assetIdentifier} retornado ao estoque`
+            });
           }
         }
         
@@ -200,7 +292,9 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const extendSubscription = (assetId: string, newEndDate: string) => {
     const asset = getAssetById(assets, assetId);
-    if (asset && asset.subscription) {
+    if (asset && asset.subscription && asset.clientId) {
+      const client = getClientById(clients, asset.clientId);
+      
       updateAsset(assetId, {
         subscription: {
           ...asset.subscription,
@@ -208,6 +302,28 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           isExpired: false
         }
       });
+      
+      if (client) {
+        // Create history entry
+        const assetIdentifier = asset.type === "CHIP" 
+          ? (asset as ChipAsset).iccid 
+          : (asset as RouterAsset).uniqueId;
+          
+        addHistoryEntry({
+          clientId: asset.clientId,
+          clientName: client.name,
+          assetIds: [asset.id],
+          assets: [{
+            id: asset.id,
+            type: asset.type,
+            identifier: assetIdentifier
+          }],
+          operationType: "ASSINATURA",
+          event: "Extensão de assinatura",
+          comments: `Assinatura do ativo ${assetIdentifier} estendida até ${new Date(newEndDate).toLocaleDateString('pt-BR')}`
+        });
+      }
+      
       toast.success("Assinatura estendida com sucesso!");
     }
   };
@@ -215,6 +331,7 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const value = {
     assets,
     clients,
+    history,
     addAsset,
     updateAsset,
     deleteAsset,
@@ -230,6 +347,9 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     getExpiredSubscriptions,
     returnAssetsToStock,
     extendSubscription,
+    addHistoryEntry,
+    getAssetHistory,
+    getClientHistory,
   };
 
   return <AssetContext.Provider value={value}>{children}</AssetContext.Provider>;

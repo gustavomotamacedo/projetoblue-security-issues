@@ -15,12 +15,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/utils/toast";
+import ClientDetailsDialog from "@/components/clients/ClientDetailsDialog";
 
 export default function Clients() {
   const { clients, addClient, updateClient, deleteClient, getClientById } = useAssets();
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<Omit<Client, "id" | "assets">>({
@@ -89,6 +92,11 @@ export default function Clients() {
       setEditingClientId(id);
       setIsAddingClient(true);
     }
+  };
+
+  const viewClientDetails = (client: Client) => {
+    setSelectedClient(client);
+    setIsDetailsDialogOpen(true);
   };
 
   const resetForm = () => {
@@ -257,7 +265,11 @@ export default function Clients() {
                   </TableRow>
                 ) : (
                   filteredClients.map((client) => (
-                    <TableRow key={client.id}>
+                    <TableRow 
+                      key={client.id}
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => viewClientDetails(client)}
+                    >
                       <TableCell className="font-medium">{client.name}</TableCell>
                       <TableCell>
                         {client.documentType}: {client.document}
@@ -269,7 +281,7 @@ export default function Clients() {
                           {client.assets.length}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end space-x-2">
                           <Button 
                             variant="outline" 
@@ -296,6 +308,12 @@ export default function Clients() {
           </div>
         </>
       )}
+      
+      <ClientDetailsDialog 
+        client={selectedClient}
+        isOpen={isDetailsDialogOpen}
+        onClose={() => setIsDetailsDialogOpen(false)}
+      />
     </div>
   );
 }

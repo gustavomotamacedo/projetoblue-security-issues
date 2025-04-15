@@ -1,9 +1,11 @@
 
 import { Asset, AssetStatus, Client, AssetType, SubscriptionInfo } from "@/types/asset";
+import { AssetHistoryEntry } from "@/types/assetHistory";
 
 export interface AssetContextType {
   assets: Asset[];
   clients: Client[];
+  history: AssetHistoryEntry[];
   addAsset: (asset: Omit<Asset, "id" | "status">) => void;
   updateAsset: (id: string, asset: Partial<Asset>) => void;
   deleteAsset: (id: string) => void;
@@ -19,4 +21,7 @@ export interface AssetContextType {
   getExpiredSubscriptions: () => Asset[];
   returnAssetsToStock: (assetIds: string[]) => void;
   extendSubscription: (assetId: string, newEndDate: string) => void;
+  addHistoryEntry: (entry: Omit<AssetHistoryEntry, "id" | "timestamp">) => void;
+  getAssetHistory: (assetId: string) => AssetHistoryEntry[];
+  getClientHistory: (clientId: string) => AssetHistoryEntry[];
 }
