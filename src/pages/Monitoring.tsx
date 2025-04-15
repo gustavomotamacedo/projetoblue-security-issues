@@ -1,4 +1,3 @@
-
 import { useAssets } from "@/context/AssetContext";
 import { AssetStatus } from "@/types/asset";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -11,26 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Signal, AlertTriangle, WifiOff, Wrench, Clock } from "lucide-react";
+import { AlertTriangle, WifiOff, Wrench } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Define status colors and icons
-const statusConfig: Record<AssetStatus, { color: string; icon: React.ReactNode; description: string }> = {
-  "DISPONÍVEL": { 
-    color: "bg-green-100 text-green-700", 
-    icon: <Signal className="h-5 w-5" />,
-    description: "Ativos disponíveis para uso"
-  },
-  "ALUGADO": { 
-    color: "bg-blue-100 text-blue-700", 
-    icon: <Clock className="h-5 w-5" />,
-    description: "Ativos alugados para clientes"
-  },
-  "ASSINATURA": { 
-    color: "bg-purple-100 text-purple-700", 
-    icon: <Clock className="h-5 w-5" />,
-    description: "Ativos em uso por assinatura"
-  },
+// Define monitoring status configurations
+const monitoringStatusConfig: Record<AssetStatus, { color: string; icon: React.ReactNode; description: string }> = {
   "SEM DADOS": { 
     color: "bg-gray-100 text-gray-700", 
     icon: <WifiOff className="h-5 w-5" />,
@@ -48,162 +32,45 @@ const statusConfig: Record<AssetStatus, { color: string; icon: React.ReactNode; 
   }
 };
 
+const monitoringStatuses: AssetStatus[] = ["SEM DADOS", "BLOQUEADO", "MANUTENÇÃO"];
+
 export default function Monitoring() {
   const { assets, getAssetsByStatus, getClientById } = useAssets();
   
-  // Calculate metrics
-  const totalAssets = assets.length;
-  const availableAssets = getAssetsByStatus("DISPONÍVEL").length;
-  const rentedAssets = getAssetsByStatus("ALUGADO").length;
-  const subscriptionAssets = getAssetsByStatus("ASSINATURA").length;
-  const noDataAssets = getAssetsByStatus("SEM DADOS").length;
-  const blockedAssets = getAssetsByStatus("BLOQUEADO").length;
-  const maintenanceAssets = getAssetsByStatus("MANUTENÇÃO").length;
+  // Get assets that need monitoring
+  const assetsNeedingAttention = assets.filter(asset => 
+    monitoringStatuses.includes(asset.status)
+  );
   
-  // Calculate percentages
-  const getPercentage = (count: number) => {
-    return totalAssets > 0 ? Math.round((count / totalAssets) * 100) : 0;
-  };
-
-  // Get critical assets (those that need attention)
-  const criticalAssets = [
-    ...getAssetsByStatus("BLOQUEADO"),
-    ...getAssetsByStatus("SEM DADOS"),
-    ...getAssetsByStatus("MANUTENÇÃO")
-  ];
-
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Monitoramento de Ativos</h1>
-        <p className="text-gray-500">Monitore o status e condição de todos os ativos em tempo real</p>
-      </div>
-
-      {/* Status Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Total de Ativos</CardTitle>
-            <CardDescription>Visão geral da sua frota</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{totalAssets}</div>
-            <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="text-green-600 font-medium">{availableAssets}</span> disponíveis
-              </div>
-              <div>
-                <span className="text-blue-600 font-medium">{rentedAssets}</span> alugados
-              </div>
-              <div>
-                <span className="text-purple-600 font-medium">{subscriptionAssets}</span> assinatura
-              </div>
-              <div>
-                <span className="text-red-600 font-medium">{blockedAssets + noDataAssets + maintenanceAssets}</span> críticos
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Status Críticos</CardTitle>
-            <CardDescription>Ativos que precisam de atenção</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Bloqueados</span>
-                <div className="flex items-center">
-                  <span className="text-red-600 font-medium">{blockedAssets}</span>
-                  <span className="text-xs text-gray-500 ml-1">
-                    ({getPercentage(blockedAssets)}%)
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Sem Dados</span>
-                <div className="flex items-center">
-                  <span className="text-gray-600 font-medium">{noDataAssets}</span>
-                  <span className="text-xs text-gray-500 ml-1">
-                    ({getPercentage(noDataAssets)}%)
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Em Manutenção</span>
-                <div className="flex items-center">
-                  <span className="text-yellow-600 font-medium">{maintenanceAssets}</span>
-                  <span className="text-xs text-gray-500 ml-1">
-                    ({getPercentage(maintenanceAssets)}%)
-                  </span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Ativos em Uso</CardTitle>
-            <CardDescription>Ativos alocados para clientes</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Alugados</span>
-                <div className="flex items-center">
-                  <span className="text-blue-600 font-medium">{rentedAssets}</span>
-                  <span className="text-xs text-gray-500 ml-1">
-                    ({getPercentage(rentedAssets)}%)
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Assinatura</span>
-                <div className="flex items-center">
-                  <span className="text-purple-600 font-medium">{subscriptionAssets}</span>
-                  <span className="text-xs text-gray-500 ml-1">
-                    ({getPercentage(subscriptionAssets)}%)
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Disponíveis</span>
-                <div className="flex items-center">
-                  <span className="text-green-600 font-medium">{availableAssets}</span>
-                  <span className="text-xs text-gray-500 ml-1">
-                    ({getPercentage(availableAssets)}%)
-                  </span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <p className="text-gray-500">Monitore ativos que necessitam atenção especial</p>
       </div>
 
       {/* Alert for critical assets */}
-      {criticalAssets.length > 0 && (
+      {assetsNeedingAttention.length > 0 && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Atenção!</AlertTitle>
           <AlertDescription>
-            Existem {criticalAssets.length} ativos que precisam de atenção.
+            Existem {assetsNeedingAttention.length} ativos que precisam de atenção.
           </AlertDescription>
         </Alert>
       )}
 
       {/* Assets by Status Tabs */}
       <Tabs defaultValue="BLOQUEADO">
-        <TabsList className="grid grid-cols-3 md:grid-cols-6 mb-4">
-          {Object.entries(statusConfig).map(([status]) => (
+        <TabsList className="grid grid-cols-3">
+          {Object.entries(monitoringStatusConfig).map(([status]) => (
             <TabsTrigger key={status} value={status}>
               {status}
             </TabsTrigger>
           ))}
         </TabsList>
         
-        {Object.entries(statusConfig).map(([status, config]) => (
+        {Object.entries(monitoringStatusConfig).map(([status, config]) => (
           <TabsContent key={status} value={status}>
             <Card>
               <CardHeader>

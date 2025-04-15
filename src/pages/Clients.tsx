@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { useAssets } from "@/context/AssetContext";
 import { Client } from "@/types/asset";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Pencil, Trash2, Package } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Package, Flag } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -25,7 +24,6 @@ export default function Clients() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
 
-  // Form state
   const [formData, setFormData] = useState<Omit<Client, "id" | "assets">>({
     name: "",
     document: "",
@@ -44,9 +42,8 @@ export default function Clients() {
   };
 
   const handleAddClient = () => {
-    // Simple validation
-    if (!formData.name || !formData.document || !formData.contact) {
-      toast.error("Por favor, preencha todos os campos obrigatórios");
+    if (!formData.name || !formData.contact) {
+      toast.error("Por favor, preencha o nome e contato");
       return;
     }
 
@@ -58,9 +55,8 @@ export default function Clients() {
   const handleUpdateClient = () => {
     if (!editingClientId) return;
     
-    // Simple validation
-    if (!formData.name || !formData.document || !formData.contact) {
-      toast.error("Por favor, preencha todos os campos obrigatórios");
+    if (!formData.name || !formData.contact) {
+      toast.error("Por favor, preencha o nome e contato");
       return;
     }
 
@@ -120,6 +116,10 @@ export default function Clients() {
     client.document.includes(searchTerm)
   );
 
+  const isMissingCNPJ = (client: Client) => {
+    return client.documentType === "CNPJ" && (!client.document || client.document.trim() === "");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -147,7 +147,7 @@ export default function Clients() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="documentType">Tipo de Documento *</Label>
+              <Label htmlFor="documentType">Tipo de Documento</Label>
               <select
                 id="documentType"
                 name="documentType"
@@ -160,7 +160,7 @@ export default function Clients() {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="document">Documento *</Label>
+              <Label htmlFor="document">Documento</Label>
               <Input
                 id="document"
                 name="document"
@@ -270,9 +270,16 @@ export default function Clients() {
                       className="cursor-pointer hover:bg-gray-50"
                       onClick={() => viewClientDetails(client)}
                     >
-                      <TableCell className="font-medium">{client.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {isMissingCNPJ(client) && (
+                            <Flag className="h-4 w-4 text-yellow-500" />
+                          )}
+                          {client.name}
+                        </div>
+                      </TableCell>
                       <TableCell>
-                        {client.documentType}: {client.document}
+                        {client.documentType}: {client.document || "Não informado"}
                       </TableCell>
                       <TableCell>{client.contact}</TableCell>
                       <TableCell>
