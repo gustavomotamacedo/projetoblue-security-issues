@@ -4,7 +4,7 @@ import { Bell } from "lucide-react";
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center bg-white border-b px-4 lg:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center bg-white border-b px-4 md:px-6">
       <MobileNavigation />
       <div className="ml-auto flex items-center space-x-4">
         <button className="p-2 rounded-md hover:bg-gray-100 relative">
