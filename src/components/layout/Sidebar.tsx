@@ -1,4 +1,3 @@
-
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -19,7 +18,7 @@ export function Sidebar() {
   };
 
   return (
-    <div className="hidden md:flex h-screen w-64 flex-col fixed inset-y-0 bg-white border-r z-30">
+    <div className="w-64 h-screen flex-shrink-0 bg-white border-r">
       <div className="flex h-16 items-center border-b px-6">
         <h1 className="text-lg font-bold tracking-tight text-telecom-600">
           Operadora LEGAL
