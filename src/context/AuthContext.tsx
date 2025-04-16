@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -293,20 +294,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('is_approved, is_active')
-          .eq('id', data.user.id)
-          .single();
+        try {
+          // Get user profile to check approval status
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('is_approved, is_active')
+            .eq('id', data.user.id)
+            .single();
+            
+          if (profileError) {
+            console.error('Error fetching profile:', profileError);
+            throw new Error('Erro ao verificar status da conta');
+          }
           
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-          throw new Error('Erro ao verificar status da conta');
-        }
-        
-        if (profileData && (!profileData.is_approved || !profileData.is_active)) {
-          await supabase.auth.signOut();
-          throw new Error('Sua conta está aguardando aprovação do administrador. Por favor, tente novamente mais tarde.');
+          if (!profileData.is_approved || !profileData.is_active) {
+            await supabase.auth.signOut();
+            throw new Error('Sua conta está aguardando aprovação do administrador. Por favor, tente novamente mais tarde.');
+          }
+        } catch (error: any) {
+          setState(prevState => ({ 
+            ...prevState, 
+            error: error.message || 'Erro ao verificar status da conta' 
+          }));
+          toast({
+            title: "Erro de verificação",
+            description: error.message || 'Erro ao verificar status da conta.',
+            variant: "destructive"
+          });
+          return;
         }
       }
       

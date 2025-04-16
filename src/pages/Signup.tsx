@@ -12,6 +12,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { checkPasswordStrength } from '@/utils/passwordStrength';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
 
 const Signup = () => {
   const [username, setUsername] = useState('');
