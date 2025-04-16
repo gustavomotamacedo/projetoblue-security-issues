@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,7 +28,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const setupAuth = async () => {
-      // Configurar o listener de mudanças de autenticação
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, currentSession) => {
           setSession(currentSession);
@@ -47,7 +45,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           if (event === 'SIGNED_IN' && currentSession?.user) {
-            // Buscar o perfil do usuário usando setTimeout para evitar deadlock
             setTimeout(async () => {
               await fetchUserProfile(currentSession.user.id);
             }, 0);
@@ -55,7 +52,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       );
 
-      // Verificar sessão existente
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       setSession(currentSession);
       setState(prevState => ({
@@ -64,7 +60,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading: false,
       }));
 
-      // Buscar perfil se houver um usuário logado
       if (currentSession?.user) {
         await fetchUserProfile(currentSession.user.id);
       }
@@ -96,7 +91,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           profile: data as UserProfile,
         }));
 
-        // Atualizar o último login
         await supabase
           .from('profiles')
           .update({ last_login: new Date().toISOString() })
@@ -130,23 +124,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   };
 
-  const signUp = async (email: string, password: string, username: string) => {
+  const checkUsernameExists = async (username: string): Promise<boolean> => {
     try {
-      setState(prevState => ({ ...prevState, isLoading: true, error: null }));
-      
-      // Validação prévia dos dados
-      const validationError = validateSignUpData(email, password, username);
-      if (validationError) {
-        setState(prevState => ({ ...prevState, error: validationError }));
-        toast({
-          title: "Erro de validação",
-          description: validationError,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Verificar se o email já existe
       const { data: existingUsers, error: checkError } = await supabase
         .from('profiles')
         .select('id')
@@ -158,24 +137,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Erro ao verificar disponibilidade do nome de usuário');
       }
 
-      if (existingUsers && existingUsers.length > 0) {
-        setState(prevState => ({ ...prevState, error: 'Nome de usuário já cadastrado' }));
+      return !!existingUsers && existingUsers.length > 0;
+    } catch (error: any) {
+      console.error('Error in checkUsernameExists:', error);
+      throw error;
+    }
+  };
+
+  const signUp = async (email: string, password: string, username: string) => {
+    try {
+      setState(prevState => ({ ...prevState, isLoading: true, error: null }));
+      
+      const validationError = validateSignUpData(email, password, username);
+      if (validationError) {
+        setState(prevState => ({ ...prevState, error: validationError }));
         toast({
-          title: "Erro de cadastro",
-          description: "Este nome de usuário já está em uso.",
+          title: "Erro de validação",
+          description: validationError,
           variant: "destructive"
         });
         return;
       }
 
-      // Criar usuário no Supabase Auth
+      try {
+        const usernameExists = await checkUsernameExists(username);
+        
+        if (usernameExists) {
+          setState(prevState => ({ ...prevState, error: 'Nome de usuário já cadastrado' }));
+          toast({
+            title: "Erro de cadastro",
+            description: "Este nome de usuário já está em uso.",
+            variant: "destructive"
+          });
+          return;
+        }
+      } catch (error: any) {
+        setState(prevState => ({ ...prevState, error: error.message }));
+        toast({
+          title: "Erro de verificação",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
           data: {
             username,
-            role: 'analyst' // Papel padrão para novos usuários
+            role: 'analyst',
+            is_approved: false
           }
         }
       });
@@ -183,7 +196,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         console.error('Supabase Auth SignUp Error:', error);
         
-        // Mensagens de erro mais descritivas baseadas no código/mensagem recebida
         let errorMessage = 'Falha ao criar usuário';
         
         if (error.message.includes('already registered')) {
@@ -206,12 +218,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        toast({
-          title: "Cadastro realizado",
-          description: "Usuário criado com sucesso! Faça o login para continuar.",
-          variant: "default"
-        });
-        navigate('/login');
+        try {
+          await sendAdminNotification(email, username);
+          
+          toast({
+            title: "Cadastro realizado",
+            description: "Usuário criado com sucesso! Aguarde a aprovação do administrador para acessar o sistema.",
+            variant: "default"
+          });
+          navigate('/login');
+        } catch (notifError) {
+          console.error('Failed to send admin notification:', notifError);
+          
+          toast({
+            title: "Cadastro realizado",
+            description: "Usuário criado com sucesso! Aguarde a aprovação do administrador para acessar o sistema.",
+            variant: "default"
+          });
+          navigate('/login');
+        }
       }
     } catch (error: any) {
       console.error('Signup process error:', error);
@@ -227,6 +252,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const sendAdminNotification = async (userEmail: string, username: string) => {
+    const { error } = await supabase.functions.invoke('admin-notification', {
+      body: {
+        newUser: {
+          email: userEmail,
+          username: username,
+          createdAt: new Date().toISOString(),
+        }
+      }
+    });
+    
+    if (error) {
+      console.error('Error sending admin notification:', error);
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
     try {
       setState(prevState => ({ ...prevState, isLoading: true, error: null }));
@@ -235,12 +276,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Email e senha são obrigatórios');
       }
       
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
         console.error('Login error:', error);
         
-        // Mensagens de erro mais descritivas
         let errorMessage = 'Erro ao fazer login';
         
         if (error.message.includes('credentials')) {
@@ -250,6 +290,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         throw new Error(errorMessage);
+      }
+
+      if (data.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_approved, is_active')
+          .eq('id', data.user.id)
+          .single();
+          
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          throw new Error('Erro ao verificar status da conta');
+        }
+        
+        if (profileData && (!profileData.is_approved || !profileData.is_active)) {
+          await supabase.auth.signOut();
+          throw new Error('Sua conta está aguardando aprovação do administrador. Por favor, tente novamente mais tarde.');
+        }
       }
       
       navigate('/');

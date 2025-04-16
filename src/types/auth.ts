@@ -11,6 +11,7 @@ export interface UserProfile {
   created_at: string;
   last_login?: string;
   is_active: boolean;
+  is_approved: boolean;
 }
 
 export interface AuthState {

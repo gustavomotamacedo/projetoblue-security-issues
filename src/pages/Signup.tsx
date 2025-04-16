@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { NamedLogo } from '@/components/ui/namedlogo';
-import { MoonStar, Sun, AlertCircle, Check } from 'lucide-react';
+import { MoonStar, Sun, AlertCircle, Check, Info } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { checkPasswordStrength } from '@/utils/passwordStrength';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Signup = () => {
   const [username, setUsername] = useState('');
@@ -19,6 +20,9 @@ const Signup = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
   const [passwordsMatch, setPasswordsMatch] = useState(true);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [usernameCheckError, setUsernameCheckError] = useState<string | null>(null);
   
   const { signUp, isAuthenticated, isLoading, error } = useAuth();
   const navigate = useNavigate();
@@ -46,11 +50,58 @@ const Signup = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Verifica disponibilidade do nome de usuário
+  useEffect(() => {
+    const checkUsername = async () => {
+      // Resetar estados anteriores
+      setUsernameAvailable(null);
+      setUsernameCheckError(null);
+      
+      // Verificar apenas se houver um username com pelo menos 3 caracteres
+      if (username.length < 3) return;
+      
+      setCheckingUsername(true);
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('username', username)
+          .limit(1);
+        
+        if (error) {
+          console.error('Error checking username:', error);
+          setUsernameCheckError('Erro ao verificar disponibilidade do nome de usuário');
+        } else {
+          setUsernameAvailable(!data || data.length === 0);
+        }
+      } catch (err) {
+        console.error('Exception checking username:', err);
+        setUsernameCheckError('Erro ao verificar disponibilidade do nome de usuário');
+      } finally {
+        setCheckingUsername(false);
+      }
+    };
+    
+    // Debounce para evitar múltiplas chamadas
+    const timeoutId = setTimeout(() => {
+      if (username.length >= 3) {
+        checkUsername();
+      }
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
+  }, [username]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (password !== confirmPassword) {
       setPasswordsMatch(false);
+      return;
+    }
+    
+    if (usernameCheckError || (username.length >= 3 && usernameAvailable === false)) {
       return;
     }
     
@@ -89,6 +140,12 @@ const Signup = () => {
           <h2 className="text-2xl font-bold text-center">Criar Conta</h2>
         </CardHeader>
         <CardContent>
+          <Alert className="mb-4 bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-800">
+            <Info className="h-4 w-4 text-blue-600 dark:text-blue-500" />
+            <AlertDescription className="text-sm text-blue-700 dark:text-blue-400">
+              Após o cadastro, sua conta precisará ser aprovada por um administrador antes de acessar o sistema.
+            </AlertDescription>
+          </Alert>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="username">Nome de Usuário</Label>
@@ -99,7 +156,35 @@ const Signup = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="seunome"
                 required
+                className={`${
+                  usernameAvailable === true && username.length >= 3 
+                    ? 'border-green-500' 
+                    : usernameAvailable === false || usernameCheckError 
+                      ? 'border-red-500' 
+                      : ''
+                }`}
               />
+              {usernameCheckError ? (
+                <p className="text-sm text-red-500 flex items-center mt-1">
+                  <AlertCircle size={14} className="mr-1" />
+                  {usernameCheckError}
+                </p>
+              ) : username.length >= 3 && usernameAvailable === false ? (
+                <p className="text-sm text-red-500 flex items-center mt-1">
+                  <AlertCircle size={14} className="mr-1" />
+                  Nome de usuário já está em uso
+                </p>
+              ) : username.length >= 3 && usernameAvailable === true ? (
+                <p className="text-sm text-green-500 flex items-center mt-1">
+                  <Check size={14} className="mr-1" />
+                  Nome de usuário disponível
+                </p>
+              ) : null}
+              {checkingUsername && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Verificando disponibilidade...
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
@@ -171,7 +256,7 @@ const Signup = () => {
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={isLoading || !passwordsMatch}
+              disabled={isLoading || !passwordsMatch || (username.length >= 3 && usernameAvailable === false) || !!usernameCheckError}
             >
               {isLoading ? 'Processando...' : 'Criar Conta'}
             </Button>
