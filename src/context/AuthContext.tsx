@@ -298,7 +298,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Get user profile to check approval status
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
-            .select('is_approved, is_active')
+            .select('*')
             .eq('id', data.user.id)
             .single();
             
@@ -307,7 +307,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             throw new Error('Erro ao verificar status da conta');
           }
           
-          if (!profileData.is_approved || !profileData.is_active) {
+          // Now we check if the profile exists and if it has the required properties
+          if (!profileData || 
+             (typeof profileData.is_approved === 'boolean' && !profileData.is_approved) || 
+             (typeof profileData.is_active === 'boolean' && !profileData.is_active)) {
             await supabase.auth.signOut();
             throw new Error('Sua conta está aguardando aprovação do administrador. Por favor, tente novamente mais tarde.');
           }
