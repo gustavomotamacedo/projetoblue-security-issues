@@ -1,6 +1,6 @@
 
 import { useAssets } from "@/context/AssetContext";
-import { AssetStatus } from "@/types/asset";
+import { AssetStatus, RouterAsset } from "@/types/asset";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -11,8 +11,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertTriangle, WifiOff, Wrench, CheckCircle, Smartphone, Wifi } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertTriangle, WifiOff, Wrench, Smartphone, Wifi } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 // Define monitoring status configurations for assets that need attention
 const monitoringStatusConfig: Partial<Record<AssetStatus, { color: string; icon: React.ReactNode; description: string }>> = {
@@ -36,12 +38,25 @@ const monitoringStatusConfig: Partial<Record<AssetStatus, { color: string; icon:
 // Only include statuses that require monitoring/attention
 const monitoringStatuses: AssetStatus[] = ["SEM DADOS", "BLOQUEADO", "MANUTENÇÃO"];
 
+// Function to check for routers that need SSID/password update
+const getRoutersNeedingUpdate = (assets: RouterAsset[]) => {
+  return assets.filter(router => 
+    router.status === "DISPONÍVEL" && router.needsPasswordChange === true
+  );
+};
+
 export default function Monitoring() {
   const { assets, getAssetsByStatus, getClientById } = useAssets();
+  const navigate = useNavigate();
   
   // Get assets that need monitoring
   const assetsNeedingAttention = assets.filter(asset => 
     monitoringStatuses.includes(asset.status)
+  );
+  
+  // Get routers that need SSID/password update
+  const routersNeedingUpdate = getRoutersNeedingUpdate(
+    assets.filter(asset => asset.type === "ROTEADOR") as RouterAsset[]
   );
   
   return (
@@ -58,6 +73,27 @@ export default function Monitoring() {
           <AlertTitle>Atenção!</AlertTitle>
           <AlertDescription>
             Existem {assetsNeedingAttention.length} ativos que precisam de atenção.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {/* Alert for routers that need update */}
+      {routersNeedingUpdate.length > 0 && (
+        <Alert className="bg-yellow-50 border-yellow-200 text-yellow-800">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Ação Necessária!</AlertTitle>
+          <AlertDescription>
+            <div className="flex flex-col gap-2">
+              <p>Existem {routersNeedingUpdate.length} roteadores que retornaram ao estoque e precisam ter o SSID e senha atualizados.</p>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="bg-white self-start"
+                onClick={() => navigate("/inventory")}
+              >
+                Ir para Inventário
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       )}

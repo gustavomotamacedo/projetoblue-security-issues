@@ -1,3 +1,4 @@
+
 export type AssetStatus = 
   | "DISPONÍVEL" 
   | "ALUGADO" 
@@ -8,7 +9,7 @@ export type AssetStatus =
 
 export type AssetType = "CHIP" | "ROTEADOR";
 
-export type SubscriptionType = "MENSAL" | "ANUAL" | "PERSONALIZADO";
+export type SubscriptionType = "MENSAL" | "ANUAL" | "ALUGUEL";
 
 export interface SubscriptionInfo {
   type: SubscriptionType;
@@ -27,6 +28,8 @@ export interface BaseAsset {
   notes?: string;
   clientId?: string;
   subscription?: SubscriptionInfo;
+  lastSeen?: string;
+  isOnline?: boolean;
 }
 
 export interface ChipAsset extends BaseAsset {
@@ -34,6 +37,12 @@ export interface ChipAsset extends BaseAsset {
   iccid: string;
   phoneNumber: string;
   carrier: string;
+  dataUsage?: {
+    download: number;
+    upload: number;
+    period: string;
+    lastUpdated: string;
+  }
 }
 
 export interface RouterAsset extends BaseAsset {
@@ -49,6 +58,15 @@ export interface RouterAsset extends BaseAsset {
   imei?: string;          // IMEI
   serialNumber?: string;  // SN (Número de Série)
   hasWeakPassword?: boolean; // Flag for weak passwords
+  needsPasswordChange?: boolean; // Flag to indicate password should be changed
+  wifiAnalysis?: {
+    signalStrength: number;
+    latency: number;
+    transmissionSpeed: number;
+    interference: number;
+    connectedDevices: number;
+    lastUpdated: string;
+  }
 }
 
 export type Asset = ChipAsset | RouterAsset;

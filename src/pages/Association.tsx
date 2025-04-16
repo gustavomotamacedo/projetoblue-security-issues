@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAssets } from "@/context/AssetContext";
 import { Asset, Client, SubscriptionInfo, SubscriptionType } from "@/types/asset";
@@ -155,6 +156,15 @@ export default function Association() {
     return format(new Date(dateString), "dd/MM/yyyy");
   };
 
+  const getConnectionTypeDisplay = (type: string) => {
+    switch(type) {
+      case "MENSAL": return "Assinatura mensal";
+      case "ANUAL": return "Assinatura anual";
+      case "ALUGUEL": return "Aluguel";
+      default: return type;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -250,7 +260,7 @@ export default function Association() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Asset Selection Card */}
-          <Card className={`${selectedAsset ? "ring-2 ring-telecom-300" : ""}`}>
+          <Card className={`${selectedAsset ? "ring-2 ring-blue-300" : ""}`}>
             <CardHeader>
               <CardTitle>1. Selecione um Ativo</CardTitle>
               <CardDescription>
@@ -289,7 +299,7 @@ export default function Association() {
                       filteredAssets.map((asset) => (
                         <TableRow 
                           key={asset.id}
-                          className={selectedAsset?.id === asset.id ? "bg-telecom-50" : ""}
+                          className={selectedAsset?.id === asset.id ? "bg-blue-50" : ""}
                         >
                           <TableCell>{asset.type}</TableCell>
                           <TableCell>
@@ -317,7 +327,7 @@ export default function Association() {
           </Card>
           
           {/* Client Selection Card */}
-          <Card className={`${selectedClient ? "ring-2 ring-telecom-300" : ""}`}>
+          <Card className={`${selectedClient ? "ring-2 ring-blue-300" : ""}`}>
             <CardHeader>
               <CardTitle>2. Selecione um Cliente</CardTitle>
               <CardDescription>
@@ -356,7 +366,7 @@ export default function Association() {
                       filteredClients.map((client) => (
                         <TableRow 
                           key={client.id}
-                          className={selectedClient?.id === client.id ? "bg-telecom-50" : ""}
+                          className={selectedClient?.id === client.id ? "bg-blue-50" : ""}
                         >
                           <TableCell className="font-medium">{client.name}</TableCell>
                           <TableCell>
@@ -393,7 +403,7 @@ export default function Association() {
       
       {/* Association Action with Subscription Options */}
       {selectedAsset && selectedClient && !viewingClientId && (
-        <div className="mt-8 flex flex-col items-center justify-center p-6 bg-telecom-50 rounded-lg">
+        <div className="mt-8 flex flex-col items-center justify-center p-6 bg-blue-50 rounded-lg">
           <div className="text-center mb-4">
             <h3 className="text-lg font-medium">Confirmar Vinculação</h3>
             <p className="text-gray-500">
@@ -439,9 +449,9 @@ export default function Association() {
                     <SelectValue placeholder="Selecione o tipo de vinculação" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MENSAL">Aluguel Mensal</SelectItem>
-                    <SelectItem value="ANUAL">Assinatura Anual</SelectItem>
-                    <SelectItem value="PERSONALIZADO">Período Personalizado</SelectItem>
+                    <SelectItem value="MENSAL">Assinatura mensal</SelectItem>
+                    <SelectItem value="ANUAL">Assinatura anual</SelectItem>
+                    <SelectItem value="ALUGUEL">Aluguel</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -490,7 +500,7 @@ export default function Association() {
                     id="autoRenew"
                     checked={autoRenew}
                     onChange={(e) => setAutoRenew(e.target.checked)}
-                    className="rounded text-telecom-600 focus:ring-telecom-500"
+                    className="rounded text-blue-600 focus:ring-blue-500"
                   />
                   <Label htmlFor="autoRenew" className="text-sm font-normal">
                     Renovar automaticamente ao expirar

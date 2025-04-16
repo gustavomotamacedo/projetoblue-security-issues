@@ -151,7 +151,15 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const client = getClientById(clients, clientId);
     
     if (asset && client) {
-      const status: AssetStatus = subscription?.type === "ANUAL" ? "ASSINATURA" : "ALUGADO";
+      let status: AssetStatus;
+      
+      if (subscription?.type === "ANUAL" || subscription?.type === "MENSAL") {
+        status = "ASSINATURA";
+      } else if (subscription?.type === "ALUGUEL") {
+        status = "ALUGADO";
+      } else {
+        status = "ALUGADO"; // Default fallback
+      }
       
       updateAsset(assetId, { 
         status,
@@ -195,10 +203,26 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const client = getClientById(clients, clientId);
     
     if (asset && client) {
+      let needsPasswordChange = false;
+      
+      // If it's a router, mark it for password change
+      if (asset.type === "ROTEADOR") {
+        needsPasswordChange = true;
+        
+        // Show notification about router return and password change needed
+        toast({
+          variant: "destructive",
+          title: "⚠️ Atenção",
+          description: `O roteador saiu do cliente ${client.name} e retornou ao estoque. Altere o SSID e a senha.`,
+          duration: 5000,
+        });
+      }
+      
       updateAsset(assetId, { 
         status: "DISPONÍVEL" as AssetStatus,
         clientId: undefined,
-        subscription: undefined
+        subscription: undefined,
+        ...(asset.type === "ROTEADOR" ? { needsPasswordChange } : {})
       });
       
       updateClient(clientId, {
@@ -271,14 +295,33 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               event: "Retorno ao estoque",
               comments: `Ativo ${assetIdentifier} retornado ao estoque`
             });
+            
+            // If it's a router, mark it for password change
+            if (asset.type === "ROTEADOR") {
+              // Show notification about router return and password change needed
+              toast({
+                variant: "destructive",
+                title: "⚠️ Atenção",
+                description: `O roteador saiu do cliente ${client.name} e retornou ao estoque. Altere o SSID e a senha.`,
+                duration: 5000,
+              });
+            }
           }
         }
         
-        return {
-          ...asset,
+        const baseUpdates = {
           status: "DISPONÍVEL" as AssetStatus,
           clientId: undefined,
-          subscription: undefined
+          subscription: undefined,
+        };
+        
+        // Add router-specific updates
+        const routerUpdates = asset.type === "ROTEADOR" ? { needsPasswordChange: true } : {};
+        
+        return {
+          ...asset,
+          ...baseUpdates,
+          ...routerUpdates
         };
       }
       return asset;
