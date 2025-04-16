@@ -19,6 +19,7 @@ import History from "./pages/History";
 import DataUsage from "./pages/DataUsage";
 import WifiAnalyzer from "./pages/WifiAnalyzer";
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
 import { DataUsageProvider } from "@/context/DataUsageContext";
 import { AuthRoute } from "./components/auth/AuthRoute";
@@ -36,8 +37,9 @@ const App = () => (
             <BrowserRouter>
               <AuthProvider>
                 <Routes>
-                  {/* Rota pública - Login */}
+                  {/* Rotas públicas */}
                   <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
                 
                   {/* Rotas protegidas */}
                   <Route element={<AuthRoute><Layout /></AuthRoute>}>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -77,6 +77,14 @@ const Login = () => {
               {isLoading ? 'Aguarde...' : 'Entrar'}
             </Button>
           </form>
+          <div className="mt-4 text-center text-sm">
+            <p className="text-muted-foreground">
+              Não possui uma conta?{' '}
+              <Link to="/signup" className="text-primary hover:underline">
+                Cadastre-se
+              </Link>
+            </p>
+          </div>
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button 
