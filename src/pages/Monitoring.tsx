@@ -1,3 +1,4 @@
+
 import { useAssets } from "@/context/AssetContext";
 import { AssetStatus } from "@/types/asset";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -10,11 +11,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertTriangle, WifiOff, Wrench } from "lucide-react";
+import { AlertTriangle, WifiOff, Wrench, CheckCircle, Smartphone, Wifi } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Define monitoring status configurations
-const monitoringStatusConfig: Record<AssetStatus, { color: string; icon: React.ReactNode; description: string }> = {
+// Define monitoring status configurations for assets that need attention
+const monitoringStatusConfig: Partial<Record<AssetStatus, { color: string; icon: React.ReactNode; description: string }>> = {
   "SEM DADOS": { 
     color: "bg-gray-100 text-gray-700", 
     icon: <WifiOff className="h-5 w-5" />,
@@ -32,6 +33,7 @@ const monitoringStatusConfig: Record<AssetStatus, { color: string; icon: React.R
   }
 };
 
+// Only include statuses that require monitoring/attention
 const monitoringStatuses: AssetStatus[] = ["SEM DADOS", "BLOQUEADO", "MANUTENÇÃO"];
 
 export default function Monitoring() {
@@ -61,74 +63,79 @@ export default function Monitoring() {
       )}
 
       {/* Assets by Status Tabs */}
-      <Tabs defaultValue="BLOQUEADO">
+      <Tabs defaultValue={monitoringStatuses[0]}>
         <TabsList className="grid grid-cols-3">
-          {Object.entries(monitoringStatusConfig).map(([status]) => (
+          {monitoringStatuses.map((status) => (
             <TabsTrigger key={status} value={status}>
               {status}
             </TabsTrigger>
           ))}
         </TabsList>
         
-        {Object.entries(monitoringStatusConfig).map(([status, config]) => (
-          <TabsContent key={status} value={status}>
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <div className={`p-2 rounded-full ${config.color}`}>
-                    {config.icon}
+        {monitoringStatuses.map((status) => {
+          const config = monitoringStatusConfig[status];
+          if (!config) return null;
+          
+          return (
+            <TabsContent key={status} value={status}>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <div className={`p-2 rounded-full ${config.color}`}>
+                      {config.icon}
+                    </div>
+                    <div>
+                      <CardTitle>{status}</CardTitle>
+                      <CardDescription>{config.description}</CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle>{status}</CardTitle>
-                    <CardDescription>{config.description}</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Detalhes</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Data de Registro</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {getAssetsByStatus(status as AssetStatus).length === 0 ? (
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                          Nenhum ativo encontrado com este status.
-                        </TableCell>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Detalhes</TableHead>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Data de Registro</TableHead>
                       </TableRow>
-                    ) : (
-                      getAssetsByStatus(status as AssetStatus).map((asset) => {
-                        const client = asset.clientId ? getClientById(asset.clientId) : null;
-                        return (
-                          <TableRow key={asset.id}>
-                            <TableCell className="font-medium">{asset.id.substring(0, 8)}</TableCell>
-                            <TableCell>{asset.type}</TableCell>
-                            <TableCell>
-                              {asset.type === "CHIP" ? 
-                                `${(asset as any).carrier} - ${(asset as any).phoneNumber}` : 
-                                `${(asset as any).brand} ${(asset as any).model}`
-                              }
-                            </TableCell>
-                            <TableCell>
-                              {client ? client.name : "—"}
-                            </TableCell>
-                            <TableCell>{new Date(asset.registrationDate).toLocaleDateString()}</TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        ))}
+                    </TableHeader>
+                    <TableBody>
+                      {getAssetsByStatus(status).length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                            Nenhum ativo encontrado com este status.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        getAssetsByStatus(status).map((asset) => {
+                          const client = asset.clientId ? getClientById(asset.clientId) : null;
+                          return (
+                            <TableRow key={asset.id}>
+                              <TableCell className="font-medium">{asset.id.substring(0, 8)}</TableCell>
+                              <TableCell>{asset.type}</TableCell>
+                              <TableCell>
+                                {asset.type === "CHIP" ? 
+                                  `${(asset as any).carrier} - ${(asset as any).phoneNumber}` : 
+                                  `${(asset as any).brand} ${(asset as any).model}`
+                                }
+                              </TableCell>
+                              <TableCell>
+                                {client ? client.name : "—"}
+                              </TableCell>
+                              <TableCell>{new Date(asset.registrationDate).toLocaleDateString()}</TableCell>
+                            </TableRow>
+                          );
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          );
+        })}
       </Tabs>
     </div>
   );
