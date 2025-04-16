@@ -91,6 +91,11 @@
 
   body {
     @apply bg-background text-foreground;
+    transition: background-color 0.5s ease, color 0.5s ease;
+  }
+
+  html.dark {
+    transition: all 0.5s ease;
   }
 }
 
@@ -118,4 +123,17 @@
   .glass {
     @apply bg-white/10 dark:bg-black/20 backdrop-blur-lg border border-white/20 dark:border-white/10 rounded-xl;
   }
+}
+
+@keyframes theme-fade {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.theme-transition {
+  animation: theme-fade 0.5s ease-in-out;
 }

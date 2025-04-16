@@ -23,9 +23,25 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const root = window.document.documentElement;
+      
+      // Adiciona a classe para a animação antes de mudar o tema
+      root.classList.add('theme-transition');
+      
+      // Remove as classes de tema
       root.classList.remove('light', 'dark');
+      
+      // Adiciona a nova classe de tema
       root.classList.add(theme);
+      
+      // Salva no localStorage
       localStorage.setItem('theme', theme);
+      
+      // Remove a classe de animação após a transição
+      const timeoutId = setTimeout(() => {
+        root.classList.remove('theme-transition');
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [theme]);
 
