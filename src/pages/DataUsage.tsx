@@ -1,4 +1,3 @@
-
 import { useState, useMemo, useEffect } from "react";
 import { useDataUsage } from "@/context/DataUsageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,10 +28,10 @@ export default function DataUsage() {
   // State for filters
   const [timeRange, setTimeRange] = useState<TimeRange>("7d");
   const [groupBy, setGroupBy] = useState<GroupByOption>("CHIP");
-  const [clientFilter, setClientFilter] = useState<string>("");
-  const [carrierFilter, setCarrierFilter] = useState<string>("");
-  const [regionFilter, setRegionFilter] = useState<string>("");
-  const [signalFilter, setSignalFilter] = useState<string>("");
+  const [clientFilter, setClientFilter] = useState<string>("all_clients");
+  const [carrierFilter, setCarrierFilter] = useState<string>("all_carriers");
+  const [regionFilter, setRegionFilter] = useState<string>("all_regions");
+  const [signalFilter, setSignalFilter] = useState<string>("all_signals");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [viewType, setViewType] = useState<"cards" | "chart">("chart");
@@ -48,10 +47,10 @@ export default function DataUsage() {
   // Apply filters
   const filteredChips = useMemo(() => {
     return allChips.filter(chip => {
-      if (clientFilter && chip.clientName !== clientFilter) return false;
-      if (carrierFilter && chip.carrier !== carrierFilter) return false;
-      if (regionFilter && chip.region !== regionFilter) return false;
-      if (signalFilter && chip.quality?.status !== signalFilter) return false;
+      if (clientFilter !== "all_clients" && chip.clientName !== clientFilter) return false;
+      if (carrierFilter !== "all_carriers" && chip.carrier !== carrierFilter) return false;
+      if (regionFilter !== "all_regions" && chip.region !== regionFilter) return false;
+      if (signalFilter !== "all_signals" && chip.quality?.status !== signalFilter) return false;
       return true;
     });
   }, [allChips, clientFilter, carrierFilter, regionFilter, signalFilter]);
@@ -138,7 +137,6 @@ export default function DataUsage() {
       
       return Object.values(regionData);
     } else {
-      // Group by chip (default)
       return filteredChips.map(chip => ({
         ...chip,
         name: chip.phoneNumber || chip.id,
@@ -158,7 +156,7 @@ export default function DataUsage() {
       carrier: item.carrier,
       iccid: item.iccid,
       clientName: item.clientName
-    })).sort((a, b) => b.download - a.download); // Sort by download
+    })).sort((a, b) => b.download - a.download);
   }, [groupedData]);
   
   // Format labels for chart
@@ -171,17 +169,16 @@ export default function DataUsage() {
 
   // Clear all filters
   const clearFilters = () => {
-    setClientFilter("");
-    setCarrierFilter("");
-    setRegionFilter("");
-    setSignalFilter("");
+    setClientFilter("all_clients");
+    setCarrierFilter("all_carriers");
+    setRegionFilter("all_regions");
+    setSignalFilter("all_signals");
     setStartDate(undefined);
     setEndDate(undefined);
   };
 
   // Handle export to Excel
   const handleExport = () => {
-    // This would be implemented with the actual Excel export functionality
     alert("Exportar dados para Excel");
   };
   

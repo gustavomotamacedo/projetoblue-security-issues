@@ -154,7 +154,7 @@ export const UsageFilters: React.FC<UsageFiltersProps> = ({
               <SelectValue placeholder="Todos os clientes" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os clientes</SelectItem>
+              <SelectItem value="all_clients">Todos os clientes</SelectItem>
               {clients.map(client => (
                 <SelectItem key={client} value={client}>{client}</SelectItem>
               ))}
@@ -169,7 +169,7 @@ export const UsageFilters: React.FC<UsageFiltersProps> = ({
               <SelectValue placeholder="Todas as operadoras" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas as operadoras</SelectItem>
+              <SelectItem value="all_carriers">Todas as operadoras</SelectItem>
               {carriers.map(carrier => (
                 <SelectItem key={carrier} value={carrier}>{carrier}</SelectItem>
               ))}
@@ -184,7 +184,7 @@ export const UsageFilters: React.FC<UsageFiltersProps> = ({
               <SelectValue placeholder="Todas as regiões" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas as regiões</SelectItem>
+              <SelectItem value="all_regions">Todas as regiões</SelectItem>
               {regions.map(region => (
                 <SelectItem key={region} value={region}>{region}</SelectItem>
               ))}
@@ -199,7 +199,7 @@ export const UsageFilters: React.FC<UsageFiltersProps> = ({
               <SelectValue placeholder="Todas" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas</SelectItem>
+              <SelectItem value="all_signals">Todas</SelectItem>
               <SelectItem value="GOOD">Bom</SelectItem>
               <SelectItem value="UNSTABLE">Médio</SelectItem>
               <SelectItem value="POOR">Ruim</SelectItem>
