@@ -1,5 +1,6 @@
+
 import React, { createContext, useState, useEffect } from "react";
-import { Asset, AssetStatus, Client, AssetType, SubscriptionInfo, ChipAsset, RouterAsset } from "@/types/asset";
+import { Asset, AssetStatus, Client, AssetType, SubscriptionInfo } from "@/types/asset";
 import { AssetContextType } from "./AssetContextTypes";
 import { AssetHistoryEntry } from "@/types/assetHistory";
 import { toast } from "@/utils/toast";
@@ -16,6 +17,17 @@ import {
   createClient, 
   updateClientInList 
 } from "./clientActions";
+import {
+  returnAssetsToStock,
+  associateAssetToClient,
+  removeAssetFromClient,
+  extendSubscription
+} from "./asset/assetOperations";
+import {
+  addHistoryEntry as addHistoryEntryAction,
+  getAssetHistory as getAssetHistoryAction,
+  getClientHistory as getClientHistoryAction
+} from "./asset/historyOperations";
 
 export const AssetContext = createContext<AssetContextType | undefined>(undefined);
 
@@ -122,230 +134,21 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const addHistoryEntry = (entryData: Omit<AssetHistoryEntry, "id" | "timestamp">) => {
-    const newEntry: AssetHistoryEntry = {
-      ...entryData,
-      id: uuidv4(),
-      timestamp: new Date().toISOString()
-    };
-    
-    setHistory(prevHistory => [...prevHistory, newEntry]);
-    toast.success("Histórico registrado com sucesso!");
+    addHistoryEntryAction(setHistory, entryData);
   };
 
   const getAssetHistory = (assetId: string) => {
-    return history.filter(entry => 
-      entry.assetIds.includes(assetId)
-    ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return getAssetHistoryAction(history, assetId);
   };
 
   const getClientHistory = (clientId: string) => {
-    return history.filter(entry => 
-      entry.clientId === clientId
-    ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  };
-
-  const associateAssetToClient = (assetId: string, clientId: string, subscription?: SubscriptionInfo) => {
-    const asset = getAssetById(assets, assetId);
-    const client = getClientById(clients, clientId);
-    
-    if (asset && client) {
-      let status: AssetStatus;
-      
-      if (subscription?.type === "ANUAL" || subscription?.type === "MENSAL") {
-        status = "ASSINATURA";
-      } else if (subscription?.type === "ALUGUEL") {
-        status = "ALUGADO";
-      } else {
-        status = "ALUGADO"; // Default fallback
-      }
-      
-      updateAsset(assetId, { 
-        status,
-        clientId,
-        subscription: subscription ? {
-          ...subscription,
-          isExpired: false
-        } : undefined
-      });
-      
-      if (!client.assets.includes(assetId)) {
-        updateClient(clientId, {
-          assets: [...client.assets, assetId]
-        });
-      }
-      
-      const assetIdentifier = asset.type === "CHIP" 
-        ? (asset as ChipAsset).iccid 
-        : (asset as RouterAsset).uniqueId;
-        
-      addHistoryEntry({
-        clientId,
-        clientName: client.name,
-        assetIds: [assetId],
-        assets: [{
-          id: assetId,
-          type: asset.type,
-          identifier: assetIdentifier
-        }],
-        operationType: status === "ASSINATURA" ? "ASSINATURA" : "ALUGUEL",
-        comments: `Ativo ${assetIdentifier} associado ao cliente ${client.name}`
-      });
-      
-      toast.success("Ativo vinculado ao cliente com sucesso!");
-    }
-  };
-
-  const removeAssetFromClient = (assetId: string, clientId: string) => {
-    const asset = getAssetById(assets, assetId);
-    const client = getClientById(clients, clientId);
-    
-    if (asset && client) {
-      let needsPasswordChange = false;
-      
-      if (asset.type === "ROTEADOR") {
-        needsPasswordChange = true;
-        toast.error("⚠️ O roteador saiu do cliente " + client.name + " e retornou ao estoque. Altere o SSID e a senha.");
-      }
-      
-      updateAsset(assetId, { 
-        status: "DISPONÍVEL" as AssetStatus,
-        clientId: undefined,
-        subscription: undefined,
-        ...(asset.type === "ROTEADOR" ? { needsPasswordChange } : {})
-      });
-      
-      updateClient(clientId, {
-        assets: client.assets.filter(id => id !== assetId)
-      });
-      
-      const assetIdentifier = asset.type === "CHIP" 
-        ? (asset as ChipAsset).iccid 
-        : (asset as RouterAsset).uniqueId;
-        
-      addHistoryEntry({
-        clientId,
-        clientName: client.name,
-        assetIds: [assetId],
-        assets: [{
-          id: assetId,
-          type: asset.type,
-          identifier: assetIdentifier
-        }],
-        operationType: asset.status === "ASSINATURA" ? "ASSINATURA" : "ALUGUEL",
-        event: "Retorno ao estoque",
-        comments: `Ativo ${assetIdentifier} removido do cliente ${client.name}`
-      });
-      
-      toast.success("Ativo desvinculado do cliente com sucesso!");
-    }
+    return getClientHistoryAction(history, clientId);
   };
 
   const getExpiredSubscriptions = () => {
     return assets.filter(asset => 
       asset.subscription?.isExpired === true
     );
-  };
-
-  const returnAssetsToStock = (assetIds: string[]) => {
-    let updated = false;
-    
-    const updatedAssets = assets.map(asset => {
-      if (assetIds.includes(asset.id)) {
-        updated = true;
-        
-        if (asset.clientId) {
-          const client = getClientById(clients, asset.clientId);
-          if (client) {
-            setClients(prevClients => 
-              updateClientInList(
-                prevClients, 
-                asset.clientId as string, 
-                { assets: client.assets.filter(id => id !== asset.id) }
-              )
-            );
-            
-            const assetIdentifier = asset.type === "CHIP" 
-              ? (asset as ChipAsset).iccid 
-              : (asset as RouterAsset).uniqueId;
-              
-            addHistoryEntry({
-              clientId: asset.clientId,
-              clientName: client.name,
-              assetIds: [asset.id],
-              assets: [{
-                id: asset.id,
-                type: asset.type,
-                identifier: assetIdentifier
-              }],
-              operationType: asset.status === "ASSINATURA" ? "ASSINATURA" : "ALUGUEL",
-              event: "Retorno ao estoque",
-              comments: `Ativo ${assetIdentifier} retornado ao estoque`
-            });
-            
-            if (asset.type === "ROTEADOR") {
-              toast.error("⚠️ O roteador saiu do cliente " + client.name + " e retornou ao estoque. Altere o SSID e a senha.");
-            }
-          }
-        }
-        
-        const baseUpdates = {
-          status: "DISPONÍVEL" as AssetStatus,
-          clientId: undefined,
-          subscription: undefined,
-        };
-        
-        const routerUpdates = asset.type === "ROTEADOR" ? { needsPasswordChange: true } : {};
-        
-        return {
-          ...asset,
-          ...baseUpdates,
-          ...routerUpdates
-        };
-      }
-      return asset;
-    });
-    
-    if (updated) {
-      setAssets(updatedAssets as Asset[]);
-      toast.success("Ativos retornados ao estoque com sucesso!");
-    }
-  };
-
-  const extendSubscription = (assetId: string, newEndDate: string) => {
-    const asset = getAssetById(assets, assetId);
-    if (asset && asset.subscription && asset.clientId) {
-      const client = getClientById(clients, asset.clientId);
-      
-      updateAsset(assetId, {
-        subscription: {
-          ...asset.subscription,
-          endDate: newEndDate,
-          isExpired: false
-        }
-      });
-      
-      if (client) {
-        const assetIdentifier = asset.type === "CHIP" 
-          ? (asset as ChipAsset).iccid 
-          : (asset as RouterAsset).uniqueId;
-          
-        addHistoryEntry({
-          clientId: asset.clientId,
-          clientName: client.name,
-          assetIds: [asset.id],
-          assets: [{
-            id: asset.id,
-            type: asset.type,
-            identifier: assetIdentifier
-          }],
-          operationType: "ASSINATURA",
-          event: "Extensão de assinatura",
-          comments: `Assinatura do ativo ${assetIdentifier} estendida até ${new Date(newEndDate).toLocaleDateString('pt-BR')}`
-        });
-      }
-      
-      toast.success("Assinatura estendida com sucesso!");
-    }
   };
 
   const value = {
@@ -362,11 +165,15 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateClient,
     deleteClient,
     getClientById: (id: string) => getClientById(clients, id),
-    associateAssetToClient,
-    removeAssetFromClient,
+    associateAssetToClient: (assetId: string, clientId: string, subscription?: SubscriptionInfo) => 
+      associateAssetToClient(assets, clients, assetId, clientId, subscription, updateAsset, updateClient, addHistoryEntry),
+    removeAssetFromClient: (assetId: string, clientId: string) => 
+      removeAssetFromClient(assets, clients, assetId, clientId, updateAsset, updateClient, addHistoryEntry),
     getExpiredSubscriptions,
-    returnAssetsToStock,
-    extendSubscription,
+    returnAssetsToStock: (assetIds: string[]) => 
+      returnAssetsToStock(assets, clients, assetIds, setAssets, setClients, addHistoryEntry),
+    extendSubscription: (assetId: string, newEndDate: string) => 
+      extendSubscription(assets, clients, assetId, newEndDate, updateAsset, addHistoryEntry),
     addHistoryEntry,
     getAssetHistory,
     getClientHistory,

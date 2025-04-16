@@ -9,6 +9,13 @@ export interface DataUsageMetrics {
   upload: number;
   signalStrength: number;
   lastUpdated: string;
+  // New fields for historical data
+  history?: {
+    timestamp: string;
+    download: number;
+    upload: number;
+    signalStrength: number;
+  }[];
 }
 
 export interface DataUsageState {
@@ -24,4 +31,11 @@ export interface ChipWithMetrics {
   clientName?: string;
   metrics?: DataUsageMetrics;
   quality?: SignalQuality;
+  iccid?: string;
+  region?: string;
+  isOnline?: boolean;
 }
+
+export type TimeRange = '24h' | '7d' | '30d' | 'custom';
+export type GroupByOption = 'CHIP' | 'CLIENTE' | 'OPERADORA' | 'REGIAO';
+export type SortByOption = 'download' | 'upload' | 'signalStrength' | 'lastUpdated';

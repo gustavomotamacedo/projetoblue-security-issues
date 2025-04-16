@@ -10,6 +10,10 @@ interface DataUsageContextType {
   updateMetrics: (assetId: string, metrics: DataUsageMetrics) => void;
   getSignalQuality: (assetId: string) => SignalQuality | undefined;
   getActiveChipsWithMetrics: () => ChipWithMetrics[];
+  getAvailableCarriers: () => string[];
+  getAvailableClients: () => string[];
+  getAvailableRegions: () => string[];
+  addHistoricalDataPoint: (assetId: string, metrics: DataUsageMetrics) => void;
 }
 
 const DataUsageContext = createContext<DataUsageContextType | undefined>(undefined);
@@ -48,8 +52,17 @@ export const DataUsageProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const updateMetrics = (assetId: string, metrics: DataUsageMetrics) => {
     setDataUsage(prev => {
       const quality = evaluateSignalQuality(metrics);
+      
+      // Add this data point to history if it exists
+      const existingMetrics = prev.metrics[assetId];
+      let newMetrics = { ...metrics };
+      
+      if (existingMetrics?.history) {
+        newMetrics.history = [...existingMetrics.history];
+      }
+      
       const newState = {
-        metrics: { ...prev.metrics, [assetId]: metrics },
+        metrics: { ...prev.metrics, [assetId]: newMetrics },
         signalQuality: { ...prev.signalQuality, [assetId]: quality }
       };
 
@@ -63,6 +76,61 @@ export const DataUsageProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
 
       return newState;
+    });
+  };
+
+  const addHistoricalDataPoint = (assetId: string, metrics: DataUsageMetrics) => {
+    setDataUsage(prev => {
+      const existingMetrics = prev.metrics[assetId];
+      
+      if (!existingMetrics) {
+        // If no existing metrics, just set these as the new metrics
+        return {
+          ...prev,
+          metrics: { 
+            ...prev.metrics, 
+            [assetId]: {
+              ...metrics,
+              history: [
+                {
+                  timestamp: metrics.lastUpdated,
+                  download: metrics.download,
+                  upload: metrics.upload,
+                  signalStrength: metrics.signalStrength
+                }
+              ]
+            } 
+          }
+        };
+      }
+      
+      // Add to history
+      const history = existingMetrics.history || [];
+      const newHistory = [
+        ...history,
+        {
+          timestamp: metrics.lastUpdated,
+          download: metrics.download,
+          upload: metrics.upload,
+          signalStrength: metrics.signalStrength
+        }
+      ];
+      
+      // Limit history to last 1000 data points
+      const trimmedHistory = newHistory.length > 1000 
+        ? newHistory.slice(newHistory.length - 1000) 
+        : newHistory;
+      
+      return {
+        ...prev,
+        metrics: { 
+          ...prev.metrics, 
+          [assetId]: {
+            ...metrics,
+            history: trimmedHistory
+          } 
+        }
+      };
     });
   };
 
@@ -85,16 +153,59 @@ export const DataUsageProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           clientId: chip.clientId,
           clientName: client?.name,
           metrics: dataUsage.metrics[chip.id],
-          quality: dataUsage.signalQuality[chip.id]
+          quality: dataUsage.signalQuality[chip.id],
+          iccid: chip.iccid,
+          isOnline: chip.isOnline,
+          region: client?.state // Using state as region for now
         };
       });
+  };
+  
+  const getAvailableCarriers = () => {
+    const uniqueCarriers = new Set<string>();
+    
+    getActiveChipsWithMetrics().forEach(chip => {
+      if (chip.carrier) {
+        uniqueCarriers.add(chip.carrier);
+      }
+    });
+    
+    return Array.from(uniqueCarriers).sort();
+  };
+  
+  const getAvailableClients = () => {
+    const uniqueClients = new Set<string>();
+    
+    getActiveChipsWithMetrics().forEach(chip => {
+      if (chip.clientName) {
+        uniqueClients.add(chip.clientName);
+      }
+    });
+    
+    return Array.from(uniqueClients).sort();
+  };
+  
+  const getAvailableRegions = () => {
+    const uniqueRegions = new Set<string>();
+    
+    getActiveChipsWithMetrics().forEach(chip => {
+      if (chip.region) {
+        uniqueRegions.add(chip.region);
+      }
+    });
+    
+    return Array.from(uniqueRegions).sort();
   };
 
   const value = {
     dataUsage,
     updateMetrics,
     getSignalQuality,
-    getActiveChipsWithMetrics
+    getActiveChipsWithMetrics,
+    getAvailableCarriers,
+    getAvailableClients,
+    getAvailableRegions,
+    addHistoricalDataPoint
   };
 
   return (
