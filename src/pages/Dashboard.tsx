@@ -1,10 +1,8 @@
-
 import { useAssets } from "@/context/AssetContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
-  LayoutDashboard, 
   Smartphone, 
   Wifi, 
   CheckCircle, 
@@ -18,6 +16,7 @@ import {
 import { exportToExcel } from "@/utils/excelExport";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import UnderperformingChipsPanel from "@/components/dashboard/UnderperformingChipsPanel";
 
 const Dashboard = () => {
   const { assets, clients, getAssetsByType, getAssetsByStatus, getExpiredSubscriptions } = useAssets();
@@ -253,6 +252,8 @@ const Dashboard = () => {
             )}
           </CardContent>
         </Card>
+        
+        <UnderperformingChipsPanel />
         
         <Card className="col-span-1 md:col-span-2">
           <CardHeader>

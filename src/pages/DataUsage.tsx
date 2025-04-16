@@ -10,6 +10,7 @@ import { ChipSummaryCards } from "@/components/data-usage/ChipSummaryCards";
 import { UsageMetricCards } from "@/components/data-usage/UsageMetricCards";
 import { UsageHeader } from "@/components/data-usage/UsageHeader";
 import { useChipDataGrouping } from "@/hooks/useChipDataGrouping";
+import { CriticalChipsPanel } from "@/components/data-usage/CriticalChipsPanel";
 
 export default function DataUsage() {
   const { 
@@ -29,6 +30,7 @@ export default function DataUsage() {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [viewType, setViewType] = useState<"cards" | "chart">("chart");
+  const [selectedChipId, setSelectedChipId] = useState<string | null>(null);
   
   // Get active chips with metrics
   const allChips = getActiveChipsWithMetrics();
@@ -41,13 +43,16 @@ export default function DataUsage() {
   // Apply filters
   const filteredChips = useMemo(() => {
     return allChips.filter(chip => {
+      // If a specific chip is selected, only show that one
+      if (selectedChipId && chip.id !== selectedChipId) return false;
+      
       if (clientFilter !== "all_clients" && chip.clientName !== clientFilter) return false;
       if (carrierFilter !== "all_carriers" && chip.carrier !== carrierFilter) return false;
       if (regionFilter !== "all_regions" && chip.region !== regionFilter) return false;
       if (signalFilter !== "all_signals" && chip.quality?.status !== signalFilter) return false;
       return true;
     });
-  }, [allChips, clientFilter, carrierFilter, regionFilter, signalFilter]);
+  }, [allChips, clientFilter, carrierFilter, regionFilter, signalFilter, selectedChipId]);
   
   // Group data using the custom hook
   const groupedData = useChipDataGrouping(filteredChips, groupBy);
@@ -81,11 +86,18 @@ export default function DataUsage() {
     setSignalFilter("all_signals");
     setStartDate(undefined);
     setEndDate(undefined);
+    setSelectedChipId(null);
   };
 
   // Handle export to Excel
   const handleExport = () => {
     alert("Exportar dados para Excel");
+  };
+
+  // Handle selecting a chip
+  const handleSelectChip = (chipId: string) => {
+    setSelectedChipId(chipId);
+    setViewType("chart"); // Switch to chart view when a chip is selected
   };
 
   return (
@@ -95,6 +107,9 @@ export default function DataUsage() {
         viewType={viewType}
         setViewType={setViewType}
       />
+
+      {/* Add critical chips panel at the top */}
+      <CriticalChipsPanel onSelectChip={handleSelectChip} />
 
       <UsageMetricCards filteredChips={filteredChips} />
 
@@ -119,6 +134,8 @@ export default function DataUsage() {
         carriers={availableCarriers}
         clients={availableClients}
         regions={availableRegions}
+        selectedChipId={selectedChipId}
+        setSelectedChipId={setSelectedChipId}
       />
 
       <Tabs value={viewType} className="w-full">
@@ -140,11 +157,11 @@ export default function DataUsage() {
               <CardTitle>Cartões de Resumo por Chip</CardTitle>
             </CardHeader>
             <CardContent>
-              <ChipSummaryCards chips={filteredChips} />
+              <ChipSummaryCards chips={filteredChips} onSelectChip={handleSelectChip} />
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
   );
-}
+};
