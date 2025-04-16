@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect } from "react";
 import { Asset, AssetStatus, Client, AssetType, SubscriptionInfo, ChipAsset, RouterAsset } from "@/types/asset";
 import { AssetContextType } from "./AssetContextTypes";
@@ -50,7 +49,6 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem("assetHistory", JSON.stringify(history));
   }, [history]);
 
-  // Check for expired subscriptions when assets change
   useEffect(() => {
     const currentDate = new Date().toISOString();
     const updatedAssets = assets.map(asset => {
@@ -210,12 +208,7 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         needsPasswordChange = true;
         
         // Show notification about router return and password change needed
-        toast({
-          variant: "destructive",
-          title: "⚠️ Atenção",
-          description: `O roteador saiu do cliente ${client.name} e retornou ao estoque. Altere o SSID e a senha.`,
-          duration: 5000,
-        });
+        toast.error("⚠️ O roteador saiu do cliente " + client.name + " e retornou ao estoque. Altere o SSID e a senha.");
       }
       
       updateAsset(assetId, { 
@@ -299,12 +292,7 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             // If it's a router, mark it for password change
             if (asset.type === "ROTEADOR") {
               // Show notification about router return and password change needed
-              toast({
-                variant: "destructive",
-                title: "⚠️ Atenção",
-                description: `O roteador saiu do cliente ${client.name} e retornou ao estoque. Altere o SSID e a senha.`,
-                duration: 5000,
-              });
+              toast.error("⚠️ O roteador saiu do cliente " + client.name + " e retornou ao estoque. Altere o SSID e a senha.");
             }
           }
         }
