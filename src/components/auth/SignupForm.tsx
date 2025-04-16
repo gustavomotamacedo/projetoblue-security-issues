@@ -67,12 +67,15 @@ export const SignupForm = ({ onSubmit }: SignupFormProps) => {
         if (error) {
           console.error('Error checking username:', error);
           setUsernameCheckError('Erro ao verificar disponibilidade do nome de usuário');
+          setUsernameAvailable(null);
         } else {
-          setUsernameAvailable(!data || data.length === 0);
+          // Verifica se há algum resultado retornado
+          setUsernameAvailable(data.length === 0);
         }
       } catch (err) {
         console.error('Exception checking username:', err);
         setUsernameCheckError('Erro ao verificar disponibilidade do nome de usuário');
+        setUsernameAvailable(null);
       } finally {
         setCheckingUsername(false);
       }

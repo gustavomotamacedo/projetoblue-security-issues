@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { AlertCircle, Check } from 'lucide-react';
+import { AlertCircle, Check, Loader2 } from 'lucide-react';
 
 interface UsernameAvailabilityProps {
   username: string;
@@ -45,7 +45,8 @@ export const UsernameAvailability = ({
   
   if (checkingUsername) {
     return (
-      <p className="text-sm text-muted-foreground mt-1">
+      <p className="text-sm text-muted-foreground flex items-center mt-1">
+        <Loader2 size={14} className="mr-1 animate-spin" />
         Verificando disponibilidade...
       </p>
     );
