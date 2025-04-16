@@ -46,41 +46,41 @@
   }
 
   .dark {
-    --background: 215 23% 16%;
+    --background: 215 14% 16%;
     --foreground: 210 40% 98%;
 
-    --card: 217 25% 15%;
+    --card: 217 20% 13%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 217 25% 15%;
+    --popover: 217 20% 13%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 202 73% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 23% 25%;
+    --secondary: 217 15% 19%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217 23% 20%;
+    --muted: 217 15% 16%;
     --muted-foreground: 210 30% 80%;
 
-    --accent: 217 23% 22%;
+    --accent: 217 15% 17%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217 23% 20%;
-    --input: 217 23% 20%;
+    --border: 217 15% 16%;
+    --input: 217 15% 16%;
     --ring: 202 73% 50%;
 
-    --sidebar-background: 217 27% 13%;
+    --sidebar-background: 217 20% 12%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 202 73% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 23% 20%;
+    --sidebar-accent: 217 15% 16%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 23% 20%;
+    --sidebar-border: 217 15% 16%;
     --sidebar-ring: 202 73% 45%;
   }
 }
@@ -97,6 +97,16 @@
 
   html.dark {
     transition: all 0.5s ease;
+  }
+
+  ::selection {
+    background-color: hsl(217 15% 19%);
+    color: hsl(210 40% 98%);
+  }
+
+  .dark ::selection {
+    background-color: hsl(221 14% 28%);
+    color: white;
   }
 }
 
@@ -132,17 +142,18 @@
     opacity: 1;
   }
   50% {
-    opacity: 0.5;
+    transform: scale(0.5);
+    opacity: 0.8;
   }
   100% {
-    transform: scale(100);
+    transform: scale(1);
     opacity: 0;
   }
 }
 
 @keyframes theme-fade {
   0% {
-    opacity: 0;
+    opacity: 0.3;
   }
   100% {
     opacity: 1;
@@ -150,22 +161,21 @@
 }
 
 .theme-transition {
-  animation: theme-fade 0.5s ease-in-out;
+  animation: theme-fade 0.6s ease-in-out;
 }
 
 .theme-ripple {
   position: fixed;
   border-radius: 50%;
-  background-color: var(--theme-ripple-color, hsl(var(--background)));
-  transform: scale(0);
+  transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 9999;
 }
 
 .theme-ripple-light {
-  --theme-ripple-color: #ffffff;
+  background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(240,240,240,0.8) 50%, rgba(230,230,230,0) 100%);
 }
 
 .theme-ripple-dark {
-  --theme-ripple-color: #1f2937;
+  background: radial-gradient(circle, rgba(31,41,55,1) 0%, rgba(28,36,49,0.8) 50%, rgba(23,32,46,0) 100%);
 }
