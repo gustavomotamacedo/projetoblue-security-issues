@@ -14,7 +14,6 @@ interface DataUsageContextType {
   getAvailableClients: () => string[];
   getAvailableRegions: () => string[];
   addHistoricalDataPoint: (assetId: string, metrics: DataUsageMetrics) => void;
-  getUnderperformingChips: (level?: 'critical' | 'warning') => ChipWithMetrics[];
 }
 
 const DataUsageContext = createContext<DataUsageContextType | undefined>(undefined);
@@ -162,51 +161,6 @@ export const DataUsageProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       });
   };
   
-  const getUnderperformingChips = (level?: 'critical' | 'warning') => {
-    const activeChips = getActiveChipsWithMetrics();
-    
-    // Filter chips with metrics
-    const chipsWithMetrics = activeChips.filter(chip => chip.metrics);
-    
-    // Check for underperforming chips
-    const underperformingChips = chipsWithMetrics.map(chip => {
-      // Determine if chip is underperforming
-      const downloadUsage = chip.metrics?.download || 0;
-      const uploadUsage = chip.metrics?.upload || 0;
-      const lastUpdated = chip.metrics?.lastUpdated ? new Date(chip.metrics.lastUpdated) : null;
-      const now = new Date();
-      
-      // Check if last update was more than 48 hours ago
-      const isOutdated = lastUpdated && ((now.getTime() - lastUpdated.getTime()) > 48 * 60 * 60 * 1000);
-      
-      // Check for very low usage (less than 10MB download in a week)
-      const hasLowUsage = downloadUsage < 10;
-      
-      // Check if usage is significantly lower than average (not implemented in this version)
-      
-      let anomalyLevel: 'normal' | 'warning' | 'critical' = 'normal';
-      
-      if (isOutdated) {
-        anomalyLevel = 'critical';
-      } else if (hasLowUsage) {
-        anomalyLevel = 'warning';
-      }
-      
-      return {
-        ...chip,
-        anomalyLevel
-      };
-    });
-    
-    // Filter by severity level if specified
-    if (level) {
-      return underperformingChips.filter(chip => chip.anomalyLevel === level);
-    }
-    
-    // Return all chips that are not normal
-    return underperformingChips.filter(chip => chip.anomalyLevel !== 'normal');
-  };
-  
   const getAvailableCarriers = () => {
     const uniqueCarriers = new Set<string>();
     
@@ -251,8 +205,7 @@ export const DataUsageProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     getAvailableCarriers,
     getAvailableClients,
     getAvailableRegions,
-    addHistoricalDataPoint,
-    getUnderperformingChips
+    addHistoricalDataPoint
   };
 
   return (

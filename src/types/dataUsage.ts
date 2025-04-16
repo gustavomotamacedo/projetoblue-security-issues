@@ -34,7 +34,6 @@ export interface ChipWithMetrics {
   iccid?: string;
   region?: string;
   isOnline?: boolean;
-  anomalyLevel?: 'normal' | 'warning' | 'critical';
 }
 
 export type TimeRange = '24h' | '7d' | '30d' | 'custom';

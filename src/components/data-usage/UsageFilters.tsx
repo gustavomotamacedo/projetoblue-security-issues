@@ -13,8 +13,7 @@ import { Button } from "@/components/ui/button";
 import { 
   CalendarRange, 
   FilterIcon,
-  X,
-  XCircle
+  X
 } from "lucide-react";
 import { TimeRange, GroupByOption } from "@/types/dataUsage";
 import { Label } from "@/components/ui/label";
@@ -41,8 +40,6 @@ interface UsageFiltersProps {
   carriers: string[];
   clients: string[];
   regions: string[];
-  selectedChipId?: string | null;
-  setSelectedChipId?: (chipId: string | null) => void;
 }
 
 export const UsageFilters: React.FC<UsageFiltersProps> = ({
@@ -65,16 +62,13 @@ export const UsageFilters: React.FC<UsageFiltersProps> = ({
   clearFilters,
   carriers,
   clients,
-  regions,
-  selectedChipId,
-  setSelectedChipId
+  regions
 }) => {
   const activeFiltersCount = [
-    clientFilter !== "all_clients", 
-    carrierFilter !== "all_carriers", 
-    regionFilter !== "all_regions", 
-    signalFilter !== "all_signals",
-    selectedChipId
+    clientFilter, 
+    carrierFilter, 
+    regionFilter, 
+    signalFilter
   ].filter(Boolean).length;
 
   return (
@@ -102,21 +96,6 @@ export const UsageFilters: React.FC<UsageFiltersProps> = ({
           </Button>
         )}
       </div>
-      
-      {selectedChipId && setSelectedChipId && (
-        <div className="flex items-center justify-between bg-blue-50 p-2 rounded-md border border-blue-200">
-          <span className="text-sm text-blue-700">Visualizando um chip específico</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSelectedChipId(null)}
-            className="h-6 px-2 text-blue-700"
-          >
-            <XCircle className="h-4 w-4 mr-1" />
-            Remover filtro
-          </Button>
-        </div>
-      )}
       
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <div className="space-y-2">
