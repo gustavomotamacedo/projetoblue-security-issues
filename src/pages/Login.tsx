@@ -89,12 +89,12 @@ const Login = () => {
             {theme === 'dark' ? <Sun size={20} /> : <MoonStar size={20} />}
           </Button>
           <div className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} - Sistema Telecom Asset Nexus
+            © {new Date().getFullYear()} - Sistema BLUE
           </div>
         </CardFooter>
       </Card>
     </div>
   );
-};
+}
 
 export default Login;
