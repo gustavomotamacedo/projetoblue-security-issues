@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { DataUsageState, SignalQuality, DataUsageMetrics } from '@/types/dataUsage';
+import { DataUsageState, SignalQuality, DataUsageMetrics, ChipWithMetrics } from '@/types/dataUsage';
 import { useAssets } from './useAssets';
 import { toast } from '@/utils/toast';
 import { ChipAsset } from '@/types/asset';
@@ -9,7 +9,7 @@ interface DataUsageContextType {
   dataUsage: DataUsageState;
   updateMetrics: (assetId: string, metrics: DataUsageMetrics) => void;
   getSignalQuality: (assetId: string) => SignalQuality | undefined;
-  getActiveChipsWithMetrics: () => Array<ChipAsset & { metrics?: DataUsageMetrics; quality?: SignalQuality }>;
+  getActiveChipsWithMetrics: () => ChipWithMetrics[];
 }
 
 const DataUsageContext = createContext<DataUsageContextType | undefined>(undefined);
@@ -75,11 +75,19 @@ export const DataUsageProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         Boolean(asset.clientId) && 
         ["ALUGADO", "ASSINATURA"].includes(asset.status)
       )
-      .map(chip => ({
-        ...chip,
-        metrics: dataUsage.metrics[chip.id],
-        quality: dataUsage.signalQuality[chip.id]
-      }));
+      .map(chip => {
+        const client = chip.clientId ? clients.find(c => c.id === chip.clientId) : undefined;
+        
+        return {
+          id: chip.id,
+          phoneNumber: chip.phoneNumber,
+          carrier: chip.carrier,
+          clientId: chip.clientId,
+          clientName: client?.name,
+          metrics: dataUsage.metrics[chip.id],
+          quality: dataUsage.signalQuality[chip.id]
+        };
+      });
   };
 
   const value = {

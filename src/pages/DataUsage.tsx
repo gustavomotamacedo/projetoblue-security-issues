@@ -30,6 +30,7 @@ import {
   SignalLow
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { ChipWithMetrics } from "@/types/dataUsage";
 
 const SignalIcon = ({ quality }: { quality?: string }) => {
   switch (quality) {
@@ -67,15 +68,13 @@ export default function DataUsage() {
       const clientData: Record<string, { download: number; upload: number; chips: number; name: string }> = {};
       
       chipsWithData.forEach(chip => {
-        if (chip.clientId) {
-          const clientName = chip.clientName;
-          
+        if (chip.clientId && chip.clientName) {
           if (!clientData[chip.clientId]) {
             clientData[chip.clientId] = {
               download: 0,
               upload: 0,
               chips: 0,
-              name: clientName
+              name: chip.clientName
             };
           }
           

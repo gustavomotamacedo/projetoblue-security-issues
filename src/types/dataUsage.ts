@@ -15,3 +15,13 @@ export interface DataUsageState {
   metrics: Record<string, DataUsageMetrics>;
   signalQuality: Record<string, SignalQuality>;
 }
+
+export interface ChipWithMetrics {
+  id: string;
+  phoneNumber: string;
+  carrier: string;
+  clientId?: string;
+  clientName?: string;
+  metrics?: DataUsageMetrics;
+  quality?: SignalQuality;
+}
