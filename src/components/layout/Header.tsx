@@ -18,8 +18,8 @@ export function Header() {
   const { theme, setTheme } = useTheme();
   const { signOut, profile } = useAuth();
 
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+  const toggleTheme = (e: React.MouseEvent<HTMLButtonElement>) => {
+    setTheme(theme === 'dark' ? 'light' : 'dark', e);
   };
 
   const userInitial = profile?.username?.charAt(0).toUpperCase() || 'U';

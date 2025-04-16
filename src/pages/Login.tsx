@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -27,8 +28,8 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+  const toggleTheme = (e: React.MouseEvent<HTMLButtonElement>) => {
+    setTheme(theme === 'dark' ? 'light' : 'dark', e);
   };
 
   return (

@@ -45,41 +45,41 @@
   }
 
   .dark {
-    --background: 202 73% 37%;
+    --background: 215 23% 16%;
     --foreground: 210 40% 98%;
 
-    --card: 202 73% 34%;
+    --card: 217 25% 15%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 202 73% 34%;
+    --popover: 217 25% 15%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 202 73% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 202 40% 45%;
+    --secondary: 217 23% 25%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 202 40% 35%;
+    --muted: 217 23% 20%;
     --muted-foreground: 210 30% 80%;
 
-    --accent: 202 40% 40%;
+    --accent: 217 23% 22%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 202 40% 40%;
-    --input: 202 40% 40%;
+    --border: 217 23% 20%;
+    --input: 217 23% 20%;
     --ring: 202 73% 50%;
 
-    --sidebar-background: 202 73% 32%;
+    --sidebar-background: 217 27% 13%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 202 73% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 202 40% 35%;
+    --sidebar-accent: 217 23% 20%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 202 40% 35%;
+    --sidebar-border: 217 23% 20%;
     --sidebar-ring: 202 73% 45%;
   }
 }
@@ -125,6 +125,20 @@
   }
 }
 
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(100);
+    opacity: 0;
+  }
+}
+
 @keyframes theme-fade {
   0% {
     opacity: 0;
@@ -136,4 +150,21 @@
 
 .theme-transition {
   animation: theme-fade 0.5s ease-in-out;
+}
+
+.theme-ripple {
+  position: fixed;
+  border-radius: 50%;
+  background-color: var(--theme-ripple-color, hsl(var(--background)));
+  transform: scale(0);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.theme-ripple-light {
+  --theme-ripple-color: #ffffff;
+}
+
+.theme-ripple-dark {
+  --theme-ripple-color: #1f2937;
 }
