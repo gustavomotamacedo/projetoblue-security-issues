@@ -174,7 +174,6 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
       }
       
-      // Create history entry
       const assetIdentifier = asset.type === "CHIP" 
         ? (asset as ChipAsset).iccid 
         : (asset as RouterAsset).uniqueId;
@@ -203,11 +202,8 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (asset && client) {
       let needsPasswordChange = false;
       
-      // If it's a router, mark it for password change
       if (asset.type === "ROTEADOR") {
         needsPasswordChange = true;
-        
-        // Show notification about router return and password change needed
         toast.error("⚠️ O roteador saiu do cliente " + client.name + " e retornou ao estoque. Altere o SSID e a senha.");
       }
       
@@ -222,7 +218,6 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         assets: client.assets.filter(id => id !== assetId)
       });
       
-      // Create history entry
       const assetIdentifier = asset.type === "CHIP" 
         ? (asset as ChipAsset).iccid 
         : (asset as RouterAsset).uniqueId;
@@ -258,7 +253,6 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (assetIds.includes(asset.id)) {
         updated = true;
         
-        // Find client to remove asset from their list
         if (asset.clientId) {
           const client = getClientById(clients, asset.clientId);
           if (client) {
@@ -270,7 +264,6 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               )
             );
             
-            // Create history entry
             const assetIdentifier = asset.type === "CHIP" 
               ? (asset as ChipAsset).iccid 
               : (asset as RouterAsset).uniqueId;
@@ -289,9 +282,7 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               comments: `Ativo ${assetIdentifier} retornado ao estoque`
             });
             
-            // If it's a router, mark it for password change
             if (asset.type === "ROTEADOR") {
-              // Show notification about router return and password change needed
               toast.error("⚠️ O roteador saiu do cliente " + client.name + " e retornou ao estoque. Altere o SSID e a senha.");
             }
           }
@@ -303,7 +294,6 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           subscription: undefined,
         };
         
-        // Add router-specific updates
         const routerUpdates = asset.type === "ROTEADOR" ? { needsPasswordChange: true } : {};
         
         return {
@@ -335,7 +325,6 @@ export const AssetProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
       
       if (client) {
-        // Create history entry
         const assetIdentifier = asset.type === "CHIP" 
           ? (asset as ChipAsset).iccid 
           : (asset as RouterAsset).uniqueId;

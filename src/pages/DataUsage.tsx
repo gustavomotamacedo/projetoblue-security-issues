@@ -1,7 +1,5 @@
-
 import { useState } from "react";
-import { useAssets } from "@/context/AssetContext";
-import { ChipAsset } from "@/types/asset";
+import { useDataUsage } from "@/context/DataUsageContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -23,58 +21,37 @@ import {
   Database, 
   Download, 
   Upload, 
-  FileSpreadsheet, 
+  FileSpreadsheet,
   SlidersHorizontal,
-  ArrowDownUp
+  ArrowDownUp,
+  WifiOff,
+  SignalHigh,
+  SignalMedium,
+  SignalLow
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
-// Mock data - in a real implementation, this would come from the API
-const generateMockDataUsage = (chips: ChipAsset[]) => {
-  return chips.map(chip => {
-    const downloadMB = Math.floor(Math.random() * 5000);
-    const uploadMB = Math.floor(Math.random() * 1000);
-    
-    return {
-      ...chip,
-      dataUsage: {
-        download: downloadMB,
-        upload: uploadMB,
-        period: "MENSAL",
-        lastUpdated: new Date().toISOString()
-      }
-    };
-  });
+const SignalIcon = ({ quality }: { quality?: string }) => {
+  switch (quality) {
+    case 'GOOD':
+      return <SignalHigh className="h-4 w-4 text-green-500" />;
+    case 'UNSTABLE':
+      return <SignalMedium className="h-4 w-4 text-yellow-500" />;
+    case 'POOR':
+      return <SignalLow className="h-4 w-4 text-red-500" />;
+    default:
+      return <WifiOff className="h-4 w-4 text-gray-500" />;
+  }
 };
 
 export default function DataUsage() {
-  const { assets, clients, getClientById } = useAssets();
+  const { getActiveChipsWithMetrics } = useDataUsage();
   const [period, setPeriod] = useState<string>("MENSAL");
   const [groupBy, setGroupBy] = useState<string>("CHIP");
   const [sortBy, setSortBy] = useState<string>("download");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  // Filter only chips
-  const chips = assets.filter(asset => asset.type === "CHIP") as ChipAsset[];
-  
-  // Add mock data usage if not present
-  const chipsWithData = chips.map(chip => {
-    if (!chip.dataUsage) {
-      const downloadMB = Math.floor(Math.random() * 5000);
-      const uploadMB = Math.floor(Math.random() * 1000);
-      
-      return {
-        ...chip,
-        dataUsage: {
-          download: downloadMB,
-          upload: uploadMB,
-          period: "MENSAL",
-          lastUpdated: new Date().toISOString()
-        }
-      };
-    }
-    return chip;
-  });
+  const chipsWithData = getActiveChipsWithMetrics();
 
   // Function to get formatted data size
   const formatDataSize = (sizeInMB: number) => {
@@ -91,8 +68,7 @@ export default function DataUsage() {
       
       chipsWithData.forEach(chip => {
         if (chip.clientId) {
-          const client = getClientById(chip.clientId);
-          const clientName = client ? client.name : "Cliente Desconhecido";
+          const clientName = chip.clientName;
           
           if (!clientData[chip.clientId]) {
             clientData[chip.clientId] = {
@@ -103,8 +79,8 @@ export default function DataUsage() {
             };
           }
           
-          clientData[chip.clientId].download += chip.dataUsage?.download || 0;
-          clientData[chip.clientId].upload += chip.dataUsage?.upload || 0;
+          clientData[chip.clientId].download += chip.metrics?.download || 0;
+          clientData[chip.clientId].upload += chip.metrics?.upload || 0;
           clientData[chip.clientId].chips += 1;
         }
       });
@@ -128,8 +104,8 @@ export default function DataUsage() {
           };
         }
         
-        carrierData[chip.carrier].download += chip.dataUsage?.download || 0;
-        carrierData[chip.carrier].upload += chip.dataUsage?.upload || 0;
+        carrierData[chip.carrier].download += chip.metrics?.download || 0;
+        carrierData[chip.carrier].upload += chip.metrics?.upload || 0;
         carrierData[chip.carrier].chips += 1;
       });
       
@@ -143,15 +119,14 @@ export default function DataUsage() {
     } else {
       // Group by chip (default)
       return chipsWithData.map(chip => {
-        const client = chip.clientId ? getClientById(chip.clientId) : null;
-        
         return {
           id: chip.id,
           number: chip.phoneNumber,
           carrier: chip.carrier,
-          clientName: client ? client.name : "—",
-          download: chip.dataUsage?.download || 0,
-          upload: chip.dataUsage?.upload || 0
+          clientName: chip.clientName,
+          download: chip.metrics?.download || 0,
+          upload: chip.metrics?.upload || 0,
+          quality: chip.quality?.status
         };
       });
     }
@@ -218,7 +193,7 @@ export default function DataUsage() {
             <div className="flex items-center">
               <Download className="h-5 w-5 text-blue-500 mr-2" />
               <div className="text-2xl font-bold">
-                {formatDataSize(chipsWithData.reduce((sum, chip) => sum + (chip.dataUsage?.download || 0), 0))}
+                {formatDataSize(chipsWithData.reduce((sum, chip) => sum + (chip.metrics?.download || 0), 0))}
               </div>
             </div>
           </CardContent>
@@ -232,7 +207,7 @@ export default function DataUsage() {
             <div className="flex items-center">
               <Upload className="h-5 w-5 text-green-500 mr-2" />
               <div className="text-2xl font-bold">
-                {formatDataSize(chipsWithData.reduce((sum, chip) => sum + (chip.dataUsage?.upload || 0), 0))}
+                {formatDataSize(chipsWithData.reduce((sum, chip) => sum + (chip.metrics?.upload || 0), 0))}
               </div>
             </div>
           </CardContent>
@@ -310,7 +285,7 @@ export default function DataUsage() {
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <CardTitle>Detalhes de Consumo</CardTitle>
+            <CardTitle>Detalhes de Consumo e Qualidade do Sinal</CardTitle>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={() => toggleSort("download")}>
                 <SlidersHorizontal className="h-4 w-4 mr-2" />
@@ -332,22 +307,13 @@ export default function DataUsage() {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              {groupBy === "CHIP" ? (
-                <TableRow>
-                  <TableHead>Número</TableHead>
-                  <TableHead>Operadora</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Download</TableHead>
-                  <TableHead>Upload</TableHead>
-                </TableRow>
-              ) : (
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Quantidade de Chips</TableHead>
-                  <TableHead>Download Total</TableHead>
-                  <TableHead>Upload Total</TableHead>
-                </TableRow>
-              )}
+              <TableRow>
+                <TableHead>Número</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Download</TableHead>
+                <TableHead>Upload</TableHead>
+                <TableHead>Qualidade do Sinal</TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {processedData.length === 0 ? (
@@ -357,24 +323,24 @@ export default function DataUsage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                processedData.map((item) => (
-                  <TableRow key={item.id}>
-                    {groupBy === "CHIP" ? (
-                      <>
-                        <TableCell>{item.number}</TableCell>
-                        <TableCell>{item.carrier}</TableCell>
-                        <TableCell>{item.clientName}</TableCell>
-                        <TableCell>{formatDataSize(item.download)}</TableCell>
-                        <TableCell>{formatDataSize(item.upload)}</TableCell>
-                      </>
-                    ) : (
-                      <>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell>{item.chips}</TableCell>
-                        <TableCell>{formatDataSize(item.download)}</TableCell>
-                        <TableCell>{formatDataSize(item.upload)}</TableCell>
-                      </>
-                    )}
+                processedData.map((chip) => (
+                  <TableRow key={chip.id}>
+                    <TableCell>{chip.number}</TableCell>
+                    <TableCell>{chip.clientName}</TableCell>
+                    <TableCell>{formatDataSize(chip.download)}</TableCell>
+                    <TableCell>{formatDataSize(chip.upload)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <SignalIcon quality={chip.quality} />
+                        <span className={
+                          chip.quality === 'GOOD' ? 'text-green-600' :
+                          chip.quality === 'UNSTABLE' ? 'text-yellow-600' :
+                          'text-red-600'
+                        }>
+                          {chip.quality || 'Sem dados'}
+                        </span>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
