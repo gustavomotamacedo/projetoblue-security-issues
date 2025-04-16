@@ -1,10 +1,10 @@
 
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BLUE</title>
+    <title>Telecom Asset Nexus</title>
     <meta name="description" content="Sistema de Gestão de Ativos de Telecomunicação" />
     <meta name="author" content="Telecom Asset Nexus" />
 
@@ -16,6 +16,13 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    
+    <script>
+      // Verificar o tema antes de renderizar a página para evitar flash
+      const savedTheme = localStorage.getItem('theme') || 
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.classList.add(savedTheme);
+    </script>
   </head>
 
   <body>
