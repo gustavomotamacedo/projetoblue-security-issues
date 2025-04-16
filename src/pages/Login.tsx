@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -35,11 +34,10 @@ const Login = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="flex flex-col items-center space-y-4 pt-8">
-          <div className="h-20 w-auto">
-            <NamedLogo />
+        <CardHeader className="flex flex-col items-center justify-center pt-8">
+          <div className="w-full flex justify-center py-4">
+            <NamedLogo size="lg" />
           </div>
-          <h1 className="text-center text-2xl font-bold">Login</h1>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
