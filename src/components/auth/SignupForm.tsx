@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
 import { UsernameAvailability } from './UsernameAvailability';
 import { PasswordMatch } from './PasswordMatch';
+import { PasswordInput } from './PasswordInput';
 import { checkPasswordStrength } from '@/utils/passwordStrength';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -154,13 +155,10 @@ export const SignupForm = ({ onSubmit }: SignupFormProps) => {
       
       <div className="space-y-2">
         <Label htmlFor="password">Senha</Label>
-        <Input 
+        <PasswordInput 
           id="password" 
-          type="password" 
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••"
-          required
           className="mb-1"
         />
         <PasswordStrengthIndicator strength={passwordStrength} />
@@ -168,13 +166,10 @@ export const SignupForm = ({ onSubmit }: SignupFormProps) => {
       
       <div className="space-y-2">
         <Label htmlFor="confirm-password">Confirmar Senha</Label>
-        <Input 
+        <PasswordInput 
           id="confirm-password" 
-          type="password" 
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="••••••••"
-          required
         />
         <PasswordMatch 
           passwordsMatch={passwordsMatch} 

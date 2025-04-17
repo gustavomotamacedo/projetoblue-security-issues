@@ -9,6 +9,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { NamedLogo } from '@/components/ui/namedlogo';
 import { MoonStar, Sun } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { PasswordInput } from '@/components/auth/PasswordInput';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -55,13 +56,10 @@ const Login = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
-              <Input 
-                id="password" 
-                type="password" 
+              <PasswordInput
+                id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
               />
             </div>
             {error && (
