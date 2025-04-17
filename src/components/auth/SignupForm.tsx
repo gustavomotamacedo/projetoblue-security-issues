@@ -33,9 +33,11 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
   const [passwordsMatch, setPasswordsMatch] = useState(true);
   const [captchaToken, setCaptchaToken] = useState<string | undefined>(undefined);
+  const [formIsValid, setFormIsValid] = useState(false);
   const captchaContainerRef = useRef<HTMLDivElement>(null);
   const [widgetId, setWidgetId] = useState<string | null>(null);
   
+  // Verifica a força da senha e se as senhas coincidem
   useEffect(() => {
     if (password) {
       setPasswordStrength(checkPasswordStrength(password));
@@ -49,6 +51,20 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
       setPasswordsMatch(true);
     }
   }, [password, confirmPassword]);
+
+  // Valida o formulário completo
+  useEffect(() => {
+    const isEmailValid = email && email.includes('@') && email.includes('.');
+    const isPasswordValid = password && password.length >= 6 && passwordStrength !== 'weak';
+    const isConfirmPasswordValid = confirmPassword && password === confirmPassword;
+    
+    setFormIsValid(
+      isEmailValid && 
+      isPasswordValid && 
+      isConfirmPasswordValid && 
+      !!captchaToken
+    );
+  }, [email, password, confirmPassword, passwordStrength, captchaToken]);
 
   // Carrega e inicializa o Cloudflare Turnstile (CAPTCHA)
   useEffect(() => {
@@ -167,7 +183,7 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
       <Button 
         type="submit" 
         className="w-full" 
-        disabled={isLoading || !passwordsMatch || !captchaToken}
+        disabled={isLoading || !formIsValid}
       >
         {isLoading ? 'Processando...' : 'Criar Conta'}
       </Button>
