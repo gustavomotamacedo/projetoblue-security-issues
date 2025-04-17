@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { ThemeToggle } from '@/components/auth/ThemeToggle';
 const Signup = () => {
   const { signUp, isAuthenticated, error, isLoading } = useAuth();
   const navigate = useNavigate();
+  const [signupError, setSignupError] = useState<string | null>(error);
 
   React.useEffect(() => {
     if (isAuthenticated) {
@@ -17,8 +18,13 @@ const Signup = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  React.useEffect(() => {
+    setSignupError(error);
+  }, [error]);
+
   const handleSubmit = async (e: React.FormEvent, captchaToken?: string) => {
     e.preventDefault();
+    console.log("Signup form submitted");
     
     const form = e.target as HTMLFormElement;
     const email = (form.elements.namedItem('email') as HTMLInputElement).value;
@@ -44,7 +50,7 @@ const Signup = () => {
         <CardContent>
           <SignupForm 
             onSubmit={handleSubmit} 
-            error={error}
+            error={signupError}
             isLoading={isLoading}
           />
           <div className="mt-4 text-center text-sm">

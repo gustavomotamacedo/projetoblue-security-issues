@@ -54,16 +54,26 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
 
   // Valida o formulário completo
   useEffect(() => {
+    // Consoles para debugging
+    console.log('Email válido?', email && email.includes('@') && email.includes('.'));
+    console.log('Senha válida?', password && password.length >= 6 && passwordStrength !== 'weak');
+    console.log('Confirmação válida?', confirmPassword && password === confirmPassword);
+    console.log('Captcha token?', !!captchaToken);
+    console.log('Força da senha:', passwordStrength);
+    
     const isEmailValid = email && email.includes('@') && email.includes('.');
-    const isPasswordValid = password && password.length >= 6 && passwordStrength !== 'weak';
+    const isPasswordValid = password && password.length >= 6;
+    const isPasswordStrengthValid = passwordStrength === 'medium' || passwordStrength === 'strong';
     const isConfirmPasswordValid = confirmPassword && password === confirmPassword;
     
-    setFormIsValid(
-      isEmailValid && 
-      isPasswordValid && 
-      isConfirmPasswordValid && 
-      !!captchaToken
-    );
+    const isValid = isEmailValid && 
+                    isPasswordValid && 
+                    isPasswordStrengthValid && 
+                    isConfirmPasswordValid && 
+                    !!captchaToken;
+    
+    console.log('Formulário válido:', isValid);
+    setFormIsValid(isValid);
   }, [email, password, confirmPassword, passwordStrength, captchaToken]);
 
   // Carrega e inicializa o Cloudflare Turnstile (CAPTCHA)
@@ -74,6 +84,7 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
         const widgetId = window.turnstile.render(captchaContainerRef.current, {
           sitekey: '0x4AAAAAAAl7U18OnlWbOmhR', // Sitekey do Cloudflare Turnstile (não sensível)
           callback: function(token: string) {
+            console.log("Captcha verificado com sucesso!");
             setCaptchaToken(token);
           },
         });
@@ -112,6 +123,11 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
 
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Formulário submetido!');
+    console.log('Email:', email);
+    console.log('Senha válida:', password.length >= 6);
+    console.log('Senhas coincidem:', password === confirmPassword);
+    console.log('Captcha token:', captchaToken);
     
     if (password !== confirmPassword) {
       setPasswordsMatch(false);
@@ -187,6 +203,12 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
       >
         {isLoading ? 'Processando...' : 'Criar Conta'}
       </Button>
+      
+      {/* Status do formulário para debug */}
+      <div className="mt-2 text-xs text-muted-foreground">
+        <p>Status do formulário: {formIsValid ? 'Válido' : 'Inválido'}</p>
+      </div>
     </form>
   );
 };
+
