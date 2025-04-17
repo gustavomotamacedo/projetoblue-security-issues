@@ -9,7 +9,6 @@ const corsHeaders = {
 
 interface NewUserPayload {
   email: string;
-  username: string;
   createdAt: string;
 }
 
@@ -30,46 +29,20 @@ serve(async (req: Request) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Fetch admin emails
-    const { data: admins, error: adminsError } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('role', 'admin')
-      .eq('is_active', true);
+    // List of admin emails to notify
+    const adminEmails = [
+      "wagner@operadora.legal",
+      "sos@operadora.legal",
+      "joao@operadora.legal",
+      "bruno@operadora.legal"
+    ];
     
-    if (adminsError) {
-      console.error("Error fetching admins:", adminsError);
-      throw new Error("Failed to fetch admin emails");
-    }
+    console.log("Preparing to notify admins about new user:", newUser.email);
     
-    if (!admins || admins.length === 0) {
-      console.warn("No admin users found to notify");
-      return new Response(
-        JSON.stringify({ message: "No admin users found to notify" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        }
-      );
-    }
-    
-    // Send email via Supabase Edge Function
-    // Note: In a real implementation, you would use an email service like Resend
-    // For now, we'll simulate sending by logging the information
-    console.log(`
-      New user registration notification:
-      - User: ${newUser.username}
-      - Email: ${newUser.email}
-      - Registered at: ${newUser.createdAt}
-      - Would send email to admins: ${admins.map(a => a.email).join(', ')}
-    `);
-    
-    // Create a user approval record in a new table
+    // Create a user approval record in the user_approval_requests table
     const { error: approvalError } = await supabase
       .from('user_approval_requests')
       .insert({
-        user_id: null, // We don't have the user ID yet as it's a pre-registration check
-        username: newUser.username,
         email: newUser.email,
         requested_at: newUser.createdAt,
         status: 'pending'
@@ -79,6 +52,27 @@ serve(async (req: Request) => {
       console.error("Error creating approval request:", approvalError);
       // Continue execution as this is not critical
     }
+    
+    // Send email to admins via Supabase email service
+    // In production, you would use a proper email service like Resend
+    // For now, we'll simulate sending by logging the information
+    const emailSubject = "Novo usuário registrado: Aprovação necessária";
+    const emailBody = `
+      <h1>Novo usuário registrado</h1>
+      <p><strong>E-mail:</strong> ${newUser.email}</p>
+      <p><strong>Data e hora:</strong> ${new Date(newUser.createdAt).toLocaleString('pt-BR')}</p>
+      <p><strong>Status do cadastro:</strong> Concluído com sucesso, aguardando aprovação</p>
+      <p>Por favor, acesse o painel administrativo para aprovar ou rejeitar este usuário.</p>
+    `;
+    
+    // Log the notification that would be sent
+    console.log(`
+      Notificação de novo usuário:
+      - Email: ${newUser.email}
+      - Registrado em: ${newUser.createdAt}
+      - Enviaria email para: ${adminEmails.join(', ')}
+      - Assunto: ${emailSubject}
+    `);
     
     return new Response(
       JSON.stringify({ message: "Admin notification sent successfully" }),

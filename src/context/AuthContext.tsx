@@ -142,7 +142,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: {
             role: 'analyst',
             is_approved: false
-          }
+          },
+          captchaToken: undefined
         }
       });
 
@@ -159,6 +160,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           errorMessage = 'Email inválido: ' + error.message;
         } else if (error.message.includes('database')) {
           errorMessage = 'Erro de banco de dados: Falha ao criar perfil do usuário.';
+        } else if (error.message.includes('captcha')) {
+          errorMessage = 'Erro de verificação captcha: Por favor, tente novamente mais tarde.';
+          console.error('Captcha verification failed:', error);
         }
         
         setState(prevState => ({ ...prevState, error: errorMessage }));
@@ -206,17 +210,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const sendAdminNotification = async (userEmail: string) => {
-    const { error } = await supabase.functions.invoke('admin-notification', {
-      body: {
-        newUser: {
-          email: userEmail,
-          createdAt: new Date().toISOString(),
+    try {
+      console.log(`Sending admin notification for new user: ${userEmail}`);
+      
+      const { error } = await supabase.functions.invoke('admin-notification', {
+        body: {
+          newUser: {
+            email: userEmail,
+            createdAt: new Date().toISOString(),
+          }
         }
+      });
+      
+      if (error) {
+        console.error('Error sending admin notification:', error);
+        throw error;
       }
-    });
-    
-    if (error) {
-      console.error('Error sending admin notification:', error);
+      
+      console.log('Admin notification sent successfully');
+    } catch (error) {
+      console.error('Failed to send admin notification:', error);
     }
   };
 
@@ -246,7 +259,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (data.user) {
         try {
-          // Get user profile to check approval status
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
@@ -258,7 +270,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             throw new Error('Erro ao verificar status da conta');
           }
           
-          // Now we check if the profile exists and if it has the required properties
           if (!profileData || 
              (typeof profileData.is_approved === 'boolean' && !profileData.is_approved) || 
              (typeof profileData.is_active === 'boolean' && !profileData.is_active)) {

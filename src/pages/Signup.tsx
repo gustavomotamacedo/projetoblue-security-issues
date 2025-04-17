@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -17,11 +18,18 @@ const Signup = () => {
   }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     const form = e.target as HTMLFormElement;
     const email = (form.elements.namedItem('email') as HTMLInputElement).value;
     const password = (form.elements.namedItem('password') as HTMLInputElement).value;
     
-    await signUp(email, password);
+    try {
+      await signUp(email, password);
+    } catch (error) {
+      console.error("Error in signup process:", error);
+      // Error is already handled in the AuthContext
+    }
   };
 
   return (
