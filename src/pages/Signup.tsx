@@ -8,7 +8,7 @@ import { SignupForm } from '@/components/auth/SignupForm';
 import { ThemeToggle } from '@/components/auth/ThemeToggle';
 
 const Signup = () => {
-  const { signUp, isAuthenticated } = useAuth();
+  const { signUp, isAuthenticated, error, isLoading } = useAuth();
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -42,7 +42,11 @@ const Signup = () => {
           <h2 className="text-2xl font-bold text-center">Criar Conta</h2>
         </CardHeader>
         <CardContent>
-          <SignupForm onSubmit={handleSubmit} />
+          <SignupForm 
+            onSubmit={handleSubmit} 
+            error={error}
+            isLoading={isLoading}
+          />
           <div className="mt-4 text-center text-sm">
             <p className="text-muted-foreground">
               Já possui uma conta?{' '}

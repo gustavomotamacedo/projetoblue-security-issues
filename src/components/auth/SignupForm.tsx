@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertCircle, Info } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuth } from '@/context/AuthContext';
 import { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
 import { PasswordMatch } from './PasswordMatch';
 import { PasswordInput } from './PasswordInput';
@@ -13,17 +12,17 @@ import { checkPasswordStrength } from '@/utils/passwordStrength';
 
 interface SignupFormProps {
   onSubmit: (e: React.FormEvent) => Promise<void>;
+  error?: string | null;
+  isLoading?: boolean;
 }
 
-export const SignupForm = ({ onSubmit }: SignupFormProps) => {
+export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
   const [passwordsMatch, setPasswordsMatch] = useState(true);
   
-  const { error, isLoading } = useAuth();
-
   useEffect(() => {
     if (password) {
       setPasswordStrength(checkPasswordStrength(password));
