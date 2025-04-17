@@ -1,10 +1,13 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Session, User } from '@supabase/supabase-js';
+
+import React, { createContext, useContext, useEffect } from 'react';
+import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { UserProfile, AuthState } from '@/types/auth';
+import { AuthState } from '@/types/auth';
 import { useToast } from '@/hooks/use-toast';
-import { checkPasswordStrength } from '@/utils/passwordStrength';
+import { useAuthState } from '@/hooks/useAuthState';
+import { authService } from '@/services/authService';
+import { profileService } from '@/services/profileService';
 
 interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<void>;
@@ -16,13 +19,7 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    profile: null,
-    isLoading: true,
-    error: null,
-  });
+  const { state, updateState } = useAuthState();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -30,38 +27,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const setupAuth = async () => {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, currentSession) => {
-          setSession(currentSession);
-          setState(prevState => ({
-            ...prevState,
+          updateState({
             user: currentSession?.user || null,
             isLoading: false,
-          }));
+          });
 
           if (event === 'SIGNED_OUT') {
-            setState(prevState => ({
-              ...prevState,
-              profile: null,
-            }));
+            updateState({ profile: null });
           }
 
           if (event === 'SIGNED_IN' && currentSession?.user) {
             setTimeout(async () => {
-              await fetchUserProfile(currentSession.user.id);
+              const profile = await profileService.fetchUserProfile(currentSession.user.id);
+              updateState({ profile });
             }, 0);
           }
         }
       );
 
       const { data: { session: currentSession } } = await supabase.auth.getSession();
-      setSession(currentSession);
-      setState(prevState => ({
-        ...prevState,
+      updateState({
         user: currentSession?.user || null,
         isLoading: false,
-      }));
+      });
 
       if (currentSession?.user) {
-        await fetchUserProfile(currentSession.user.id);
+        const profile = await profileService.fetchUserProfile(currentSession.user.id);
+        updateState({ profile });
       }
 
       return () => {
@@ -72,84 +64,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setupAuth();
   }, []);
 
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-        throw error;
-      }
-
-      if (data) {
-        setState(prevState => ({
-          ...prevState,
-          profile: data as UserProfile,
-        }));
-
-        await supabase
-          .from('profiles')
-          .update({ last_login: new Date().toISOString() })
-          .eq('id', userId);
-      } else {
-        console.warn('No profile found for user:', userId);
-      }
-    } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
-    }
-  };
-
-  const validateSignUpData = (email: string, password: string) => {
-    if (!email || !email.includes('@') || !email.includes('.')) {
-      return 'Email inválido. Por favor, forneça um email válido.';
-    }
-    
-    if (!password || password.length < 6) {
-      return 'Senha muito curta. Deve ter pelo menos 6 caracteres.';
-    }
-    
-    const passwordStrength = checkPasswordStrength(password);
-    if (passwordStrength === 'weak') {
-      return 'Senha fraca. Use uma combinação de letras, números e caracteres especiais.';
-    }
-    
-    return null;
-  };
-
   const signUp = async (email: string, password: string) => {
     try {
-      setState(prevState => ({ ...prevState, isLoading: true, error: null }));
+      updateState({ isLoading: true, error: null });
       
-      const validationError = validateSignUpData(email, password);
-      if (validationError) {
-        setState(prevState => ({ ...prevState, error: validationError }));
+      const validation = authService.validateSignUpData({ email, password });
+      if (!validation.isValid) {
+        updateState({ error: validation.error });
         toast({
           title: "Erro de validação",
-          description: validationError,
+          description: validation.error,
           variant: "destructive"
         });
         return;
       }
 
-      const { data, error } = await supabase.auth.signUp({ 
-        email, 
-        password,
-        options: {
-          data: {
-            role: 'analyst',
-            is_approved: false
-          },
-          captchaToken: undefined
-        }
-      });
+      const { data, error } = await authService.signUp(email, password);
 
       if (error) {
-        console.error('Supabase Auth SignUp Error:', error);
-        
         let errorMessage = 'Falha ao criar usuário';
         
         if (error.message.includes('already registered')) {
@@ -160,12 +92,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           errorMessage = 'Email inválido: ' + error.message;
         } else if (error.message.includes('database')) {
           errorMessage = 'Erro de banco de dados: Falha ao criar perfil do usuário.';
-        } else if (error.message.includes('captcha')) {
-          errorMessage = 'Erro de verificação captcha: Por favor, tente novamente mais tarde.';
-          console.error('Captcha verification failed:', error);
         }
         
-        setState(prevState => ({ ...prevState, error: errorMessage }));
+        updateState({ error: errorMessage });
         toast({
           title: "Erro de cadastro",
           description: errorMessage,
@@ -175,77 +104,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        try {
-          await sendAdminNotification(email);
-          
-          toast({
-            title: "Cadastro realizado",
-            description: "Usuário criado com sucesso! Aguarde a aprovação do administrador para acessar o sistema.",
-            variant: "default"
-          });
-          navigate('/login');
-        } catch (notifError) {
-          console.error('Failed to send admin notification:', notifError);
-          
-          toast({
-            title: "Cadastro realizado",
-            description: "Usuário criado com sucesso! Aguarde a aprovação do administrador para acessar o sistema.",
-            variant: "default"
-          });
-          navigate('/login');
-        }
+        toast({
+          title: "Cadastro realizado",
+          description: "Usuário criado com sucesso! Aguarde a aprovação do administrador para acessar o sistema.",
+          variant: "default"
+        });
+        navigate('/login');
       }
     } catch (error: any) {
-      console.error('Signup process error:', error);
       const errorMessage = error.message || 'Ocorreu um erro inesperado durante o cadastro.';
-      setState(prevState => ({ ...prevState, error: errorMessage }));
+      updateState({ error: errorMessage });
       toast({
         title: "Erro no processo de cadastro",
         description: errorMessage,
         variant: "destructive"
       });
     } finally {
-      setState(prevState => ({ ...prevState, isLoading: false }));
-    }
-  };
-
-  const sendAdminNotification = async (userEmail: string) => {
-    try {
-      console.log(`Sending admin notification for new user: ${userEmail}`);
-      
-      const { error } = await supabase.functions.invoke('admin-notification', {
-        body: {
-          newUser: {
-            email: userEmail,
-            createdAt: new Date().toISOString(),
-          }
-        }
-      });
-      
-      if (error) {
-        console.error('Error sending admin notification:', error);
-        throw error;
-      }
-      
-      console.log('Admin notification sent successfully');
-    } catch (error) {
-      console.error('Failed to send admin notification:', error);
+      updateState({ isLoading: false });
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      setState(prevState => ({ ...prevState, isLoading: true, error: null }));
+      updateState({ isLoading: true, error: null });
       
       if (!email || !password) {
         throw new Error('Email e senha são obrigatórios');
       }
       
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await authService.signIn(email, password);
       
       if (error) {
-        console.error('Login error:', error);
-        
         let errorMessage = 'Erro ao fazer login';
         
         if (error.message.includes('credentials')) {
@@ -258,58 +147,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        try {
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', data.user.id)
-            .single();
-            
-          if (profileError) {
-            console.error('Error fetching profile:', profileError);
-            throw new Error('Erro ao verificar status da conta');
-          }
-          
-          if (!profileData || 
-             (typeof profileData.is_approved === 'boolean' && !profileData.is_approved) || 
-             (typeof profileData.is_active === 'boolean' && !profileData.is_active)) {
-            await supabase.auth.signOut();
-            throw new Error('Sua conta está aguardando aprovação do administrador. Por favor, tente novamente mais tarde.');
-          }
-        } catch (error: any) {
-          setState(prevState => ({ 
-            ...prevState, 
-            error: error.message || 'Erro ao verificar status da conta' 
-          }));
-          toast({
-            title: "Erro de verificação",
-            description: error.message || 'Erro ao verificar status da conta.',
-            variant: "destructive"
-          });
-          return;
+        const profile = await profileService.fetchUserProfile(data.user.id);
+        if (!profile || !profile.is_approved || !profile.is_active) {
+          await authService.signOut();
+          throw new Error('Sua conta está aguardando aprovação do administrador. Por favor, tente novamente mais tarde.');
         }
       }
       
       navigate('/');
     } catch (error: any) {
-      setState(prevState => ({ 
-        ...prevState, 
-        error: error.message || 'Erro ao fazer login' 
-      }));
+      updateState({ error: error.message || 'Erro ao fazer login' });
       toast({
         title: "Erro de autenticação",
         description: error.message || 'Falha no login. Verifique suas credenciais.',
         variant: "destructive"
       });
     } finally {
-      setState(prevState => ({ ...prevState, isLoading: false }));
+      updateState({ isLoading: false });
     }
   };
 
   const signOut = async () => {
     try {
-      setState(prevState => ({ ...prevState, isLoading: true }));
-      await supabase.auth.signOut();
+      updateState({ isLoading: true });
+      await authService.signOut();
       navigate('/login');
     } catch (error: any) {
       toast({
@@ -318,7 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         variant: "destructive"
       });
     } finally {
-      setState(prevState => ({ ...prevState, isLoading: false }));
+      updateState({ isLoading: false });
     }
   };
 
