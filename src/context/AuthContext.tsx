@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +8,7 @@ import { checkPasswordStrength } from '@/utils/passwordStrength';
 
 interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, username: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -104,13 +103,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const validateSignUpData = (email: string, password: string, username: string) => {
+  const validateSignUpData = (email: string, password: string) => {
     if (!email || !email.includes('@') || !email.includes('.')) {
       return 'Email inválido. Por favor, forneça um email válido.';
-    }
-    
-    if (!username || username.length < 3) {
-      return 'Nome de usuário inválido. Deve ter pelo menos 3 caracteres.';
     }
     
     if (!password || password.length < 6) {
@@ -125,31 +120,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   };
 
-  const checkUsernameExists = async (username: string): Promise<boolean> => {
-    try {
-      const { data: existingUsers, error: checkError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', username)
-        .limit(1);
-
-      if (checkError) {
-        console.error('Error checking existing username:', checkError);
-        throw new Error('Erro ao verificar disponibilidade do nome de usuário');
-      }
-
-      return !!existingUsers && existingUsers.length > 0;
-    } catch (error: any) {
-      console.error('Error in checkUsernameExists:', error);
-      throw error;
-    }
-  };
-
-  const signUp = async (email: string, password: string, username: string) => {
+  const signUp = async (email: string, password: string) => {
     try {
       setState(prevState => ({ ...prevState, isLoading: true, error: null }));
       
-      const validationError = validateSignUpData(email, password, username);
+      const validationError = validateSignUpData(email, password);
       if (validationError) {
         setState(prevState => ({ ...prevState, error: validationError }));
         toast({
@@ -160,34 +135,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      try {
-        const usernameExists = await checkUsernameExists(username);
-        
-        if (usernameExists) {
-          setState(prevState => ({ ...prevState, error: 'Nome de usuário já cadastrado' }));
-          toast({
-            title: "Erro de cadastro",
-            description: "Este nome de usuário já está em uso.",
-            variant: "destructive"
-          });
-          return;
-        }
-      } catch (error: any) {
-        setState(prevState => ({ ...prevState, error: error.message }));
-        toast({
-          title: "Erro de verificação",
-          description: error.message,
-          variant: "destructive"
-        });
-        return;
-      }
-
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
           data: {
-            username,
             role: 'analyst',
             is_approved: false
           }
@@ -220,7 +172,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (data.user) {
         try {
-          await sendAdminNotification(email, username);
+          await sendAdminNotification(email);
           
           toast({
             title: "Cadastro realizado",
@@ -253,12 +205,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const sendAdminNotification = async (userEmail: string, username: string) => {
+  const sendAdminNotification = async (userEmail: string) => {
     const { error } = await supabase.functions.invoke('admin-notification', {
       body: {
         newUser: {
           email: userEmail,
-          username: username,
           createdAt: new Date().toISOString(),
         }
       }

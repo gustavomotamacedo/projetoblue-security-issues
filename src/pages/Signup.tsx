@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -18,13 +17,11 @@ const Signup = () => {
   }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    // Get form values from the event target
     const form = e.target as HTMLFormElement;
     const email = (form.elements.namedItem('email') as HTMLInputElement).value;
     const password = (form.elements.namedItem('password') as HTMLInputElement).value;
-    const username = (form.elements.namedItem('username') as HTMLInputElement).value;
     
-    await signUp(email, password, username);
+    await signUp(email, password);
   };
 
   return (

@@ -18,7 +18,7 @@ export type Database = {
           is_approved: boolean
           last_login: string | null
           role: Database["public"]["Enums"]["user_role"]
-          username: string
+          username: string | null
         }
         Insert: {
           created_at?: string
@@ -28,7 +28,7 @@ export type Database = {
           is_approved?: boolean
           last_login?: string | null
           role?: Database["public"]["Enums"]["user_role"]
-          username: string
+          username?: string | null
         }
         Update: {
           created_at?: string
@@ -38,7 +38,7 @@ export type Database = {
           is_approved?: boolean
           last_login?: string | null
           role?: Database["public"]["Enums"]["user_role"]
-          username?: string
+          username?: string | null
         }
         Relationships: []
       }
