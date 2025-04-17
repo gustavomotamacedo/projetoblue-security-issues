@@ -39,7 +39,7 @@ export const authService = {
     return { isValid: true };
   },
 
-  async signUp(email: string, password: string) {
+  async signUp(email: string, password: string, captchaToken?: string) {
     return supabase.auth.signUp({
       email,
       password,
@@ -47,7 +47,8 @@ export const authService = {
         data: {
           role: 'analyst',
           is_approved: false
-        }
+        },
+        captchaToken: captchaToken
       }
     });
   },

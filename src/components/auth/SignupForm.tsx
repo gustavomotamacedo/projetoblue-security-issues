@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,9 +11,19 @@ import { PasswordInput } from './PasswordInput';
 import { checkPasswordStrength } from '@/utils/passwordStrength';
 
 interface SignupFormProps {
-  onSubmit: (e: React.FormEvent) => Promise<void>;
+  onSubmit: (e: React.FormEvent, captchaToken?: string) => Promise<void>;
   error?: string | null;
   isLoading?: boolean;
+}
+
+// Define uma interface window personalizada para acessar os métodos do Turnstile
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: string | HTMLElement, options: any) => string;
+      reset: (widgetId: string) => void;
+    };
+  }
 }
 
 export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormProps) => {
@@ -22,6 +32,9 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
   const [passwordsMatch, setPasswordsMatch] = useState(true);
+  const [captchaToken, setCaptchaToken] = useState<string | undefined>(undefined);
+  const captchaContainerRef = useRef<HTMLDivElement>(null);
+  const [widgetId, setWidgetId] = useState<string | null>(null);
   
   useEffect(() => {
     if (password) {
@@ -37,6 +50,50 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
     }
   }, [password, confirmPassword]);
 
+  // Carrega e inicializa o Cloudflare Turnstile (CAPTCHA)
+  useEffect(() => {
+    // Só inicializa o CAPTCHA se o script Turnstile já estiver carregado
+    const initTurnstile = () => {
+      if (window.turnstile && captchaContainerRef.current) {
+        const widgetId = window.turnstile.render(captchaContainerRef.current, {
+          sitekey: '0x4AAAAAAAl7U18OnlWbOmhR', // Sitekey do Cloudflare Turnstile (não sensível)
+          callback: function(token: string) {
+            setCaptchaToken(token);
+          },
+        });
+        setWidgetId(widgetId);
+      }
+    };
+
+    // Verifica se o script já está carregado
+    if (window.turnstile) {
+      initTurnstile();
+    } else {
+      // Carrega o script do Turnstile
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+      script.async = true;
+      script.defer = true;
+      script.onload = initTurnstile;
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      // Limpa o widget ao desmontar o componente
+      if (window.turnstile && widgetId) {
+        window.turnstile.reset(widgetId);
+      }
+    };
+  }, []);
+
+  // Reset do CAPTCHA quando ocorrer um erro
+  useEffect(() => {
+    if (error && window.turnstile && widgetId) {
+      window.turnstile.reset(widgetId);
+      setCaptchaToken(undefined);
+    }
+  }, [error, widgetId]);
+
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -45,7 +102,7 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
       return;
     }
     
-    await onSubmit(e);
+    await onSubmit(e, captchaToken);
   };
 
   return (
@@ -92,6 +149,11 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
           confirmPassword={confirmPassword} 
         />
       </div>
+
+      {/* Container para o CAPTCHA */}
+      <div className="flex justify-center my-4">
+        <div ref={captchaContainerRef} className="captcha-container"></div>
+      </div>
       
       {error && (
         <div className="bg-destructive/10 p-3 rounded-md border border-destructive/30">
@@ -105,7 +167,7 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
       <Button 
         type="submit" 
         className="w-full" 
-        disabled={isLoading || !passwordsMatch}
+        disabled={isLoading || !passwordsMatch || !captchaToken}
       >
         {isLoading ? 'Processando...' : 'Criar Conta'}
       </Button>

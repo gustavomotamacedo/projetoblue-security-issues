@@ -11,7 +11,7 @@ import { profileService } from '@/services/profileService';
 
 interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, captchaToken?: string) => Promise<void>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setupAuth();
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, captchaToken?: string) => {
     try {
       updateState({ isLoading: true, error: null });
       
@@ -79,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      const { data, error } = await authService.signUp(email, password);
+      const { data, error } = await authService.signUp(email, password, captchaToken);
 
       if (error) {
         let errorMessage = 'Falha ao criar usuário';
@@ -92,6 +92,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           errorMessage = 'Email inválido: ' + error.message;
         } else if (error.message.includes('database')) {
           errorMessage = 'Erro de banco de dados: Falha ao criar perfil do usuário.';
+        } else if (error.message.includes('captcha')) {
+          errorMessage = 'Verificação de captcha necessária. Por favor, tente novamente.';
+          updateState({ error: errorMessage });
+          toast({
+            title: "Erro de captcha",
+            description: errorMessage,
+            variant: "destructive"
+          });
+          return;
         }
         
         updateState({ error: errorMessage });
