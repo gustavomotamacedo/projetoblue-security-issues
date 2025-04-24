@@ -49,7 +49,7 @@ export const authService = {
         passwordLength: password?.length || 0,
         captchaDisabled: true,
         supabaseConfig: {
-          url: supabase.supabaseUrl.toString(), // Use toString() to access the URL safely
+          url: supabase.auth.getClient().config.supabaseUrl, // Safely access URL
           authEnabled: !!supabase.auth,
         }
       });
