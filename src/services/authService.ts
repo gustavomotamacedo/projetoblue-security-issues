@@ -55,8 +55,8 @@ export const authService = {
         throw new Error('Este email já está cadastrado.');
       }
       
-      // Tenta criar o usuário no Supabase Auth
-      console.log('Enviando dados para Supabase Auth...');
+      // Tenta criar o usuário no Supabase Auth com opção de CAPTCHA desativada
+      console.log('Enviando dados para Supabase Auth com CAPTCHA desativado...');
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -64,7 +64,8 @@ export const authService = {
           data: {
             role: 'analyst',
             is_approved: false
-          }
+          },
+          captchaToken: null, // Forçando o token como nulo para indicar que não estamos usando CAPTCHA
         }
       });
       
@@ -80,6 +81,9 @@ export const authService = {
           throw new Error('Problema com a senha: ' + error.message);
         } else if (error.message.includes('email')) {
           throw new Error('Problema com o email: ' + error.message);
+        } else if (error.message.includes('captcha')) {
+          console.error('Erro de CAPTCHA detectado:', error);
+          throw new Error('Erro na configuração do sistema. Por favor, tente novamente mais tarde ou entre em contato com o suporte.');
         }
         
         // Se chegou aqui, é um erro não específico
