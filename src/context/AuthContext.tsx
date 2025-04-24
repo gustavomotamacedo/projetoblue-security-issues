@@ -79,6 +79,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
+      // Verificar se o captchaToken foi fornecido
+      if (!captchaToken) {
+        updateState({ 
+          error: "Por favor, complete a verificação CAPTCHA antes de enviar."
+        });
+        toast({
+          title: "Verificação necessária",
+          description: "Por favor, complete a verificação CAPTCHA antes de enviar o formulário.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const { data, error } = await authService.signUp(email, password, captchaToken);
 
       if (error) {

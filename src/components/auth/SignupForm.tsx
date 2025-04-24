@@ -56,7 +56,7 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
   useEffect(() => {
     // Consoles para debugging
     console.log('Email válido?', email && email.includes('@') && email.includes('.'));
-    console.log('Senha válida?', password && password.length >= 6 && passwordStrength !== 'weak');
+    console.log('Senha válida?', password && password.length >= 6);
     console.log('Confirmação válida?', confirmPassword && password === confirmPassword);
     console.log('Captcha token?', !!captchaToken);
     console.log('Força da senha:', passwordStrength);
@@ -66,11 +66,11 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
     const isPasswordStrengthValid = passwordStrength === 'medium' || passwordStrength === 'strong';
     const isConfirmPasswordValid = confirmPassword && password === confirmPassword;
     
+    // Modificado: Tornar o formulário válido sem exigir o CAPTCHA para desbloquear o botão
     const isValid = isEmailValid && 
                     isPasswordValid && 
                     isPasswordStrengthValid && 
-                    isConfirmPasswordValid && 
-                    !!captchaToken;
+                    isConfirmPasswordValid;
     
     console.log('Formulário válido:', isValid);
     setFormIsValid(isValid);
@@ -207,8 +207,8 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
       {/* Status do formulário para debug */}
       <div className="mt-2 text-xs text-muted-foreground">
         <p>Status do formulário: {formIsValid ? 'Válido' : 'Inválido'}</p>
+        <p className="text-gray-500">O CAPTCHA será verificado ao enviar o formulário</p>
       </div>
     </form>
   );
 };
-
