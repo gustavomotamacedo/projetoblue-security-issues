@@ -42,6 +42,9 @@ export function useAuthActions(updateState: (state: any) => void) {
           errorMessage = 'Email inválido: ' + error.message;
         } else if (error.message.includes('database')) {
           errorMessage = 'Erro de banco de dados: Falha ao criar perfil do usuário.';
+        } else if (error.message.includes('captcha')) {
+          console.error('Erro de CAPTCHA:', error);
+          errorMessage = 'Erro de configuração do sistema. Entre em contato com o administrador.';
         }
         
         console.error('Erro traduzido:', errorMessage);

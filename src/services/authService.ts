@@ -55,8 +55,19 @@ export const authService = {
         throw new Error('Este email já está cadastrado.');
       }
       
-      // Tenta criar o usuário no Supabase Auth com opção de CAPTCHA desativada
-      console.log('Enviando dados para Supabase Auth com CAPTCHA desativado...');
+      // Log completo da configuração de auth sendo usada
+      console.log('Configuração para cadastro:', {
+        email,
+        passwordLength: password?.length || 0,
+        captchaDisabled: true,
+        supabaseConfig: {
+          url: supabase.supabaseUrl,
+          authEnabled: !!supabase.auth,
+        }
+      });
+      
+      // Tenta criar o usuário no Supabase Auth com opção de CAPTCHA explicitamente desativada
+      console.log('Enviando dados para Supabase Auth com CAPTCHA explicitamente desativado...');
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -65,15 +76,28 @@ export const authService = {
             role: 'analyst',
             is_approved: false
           },
-          captchaToken: null, // Forçando o token como nulo para indicar que não estamos usando CAPTCHA
+          captchaToken: null, // Explicitamente definindo como nulo para desativar CAPTCHA
         }
       });
       
       // Log detalhado da resposta
       console.log('Resposta completa do Supabase Auth:', JSON.stringify(data, null, 2));
-      console.log('Erro do Supabase Auth (se houver):', error ? JSON.stringify(error, null, 2) : 'Nenhum');
       
       if (error) {
+        console.error('Erro detalhado do Supabase Auth:', {
+          message: error.message,
+          cause: error.cause,
+          name: error.name,
+          status: error.status,
+          stack: error.stack
+        });
+        
+        // Tratamento específico para erros de CAPTCHA
+        if (error.message.includes('captcha')) {
+          console.error('Erro de CAPTCHA detectado apesar da desativação:', error);
+          throw new Error('Erro na configuração do CAPTCHA do sistema. Por favor, entre em contato com o suporte técnico.');
+        }
+        
         // Traduz os erros mais comuns do Supabase
         if (error.message.includes('already registered')) {
           throw new Error('Este email já está cadastrado.');
@@ -81,9 +105,6 @@ export const authService = {
           throw new Error('Problema com a senha: ' + error.message);
         } else if (error.message.includes('email')) {
           throw new Error('Problema com o email: ' + error.message);
-        } else if (error.message.includes('captcha')) {
-          console.error('Erro de CAPTCHA detectado:', error);
-          throw new Error('Erro na configuração do sistema. Por favor, tente novamente mais tarde ou entre em contato com o suporte.');
         }
         
         // Se chegou aqui, é um erro não específico

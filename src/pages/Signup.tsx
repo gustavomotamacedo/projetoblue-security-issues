@@ -12,6 +12,7 @@ const Signup = () => {
   const navigate = useNavigate();
   const [signupError, setSignupError] = useState<string | null>(error);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [technicalError, setTechnicalError] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (isAuthenticated) {
@@ -27,6 +28,7 @@ const Signup = () => {
     e.preventDefault();
     console.log("Signup form submitted");
     setIsSubmitting(true);
+    setTechnicalError(null);
     
     try {
       const form = e.target as HTMLFormElement;
@@ -44,7 +46,16 @@ const Signup = () => {
       await signUp(email, password);
     } catch (error: any) {
       console.error("Erro capturado no componente Signup:", error);
-      setSignupError(error.message || 'Ocorreu um erro durante o cadastro');
+      
+      // Armazenar erro técnico para debug
+      setTechnicalError(`Erro técnico: ${error.message || 'Erro desconhecido'}`);
+      
+      // Mostrar mensagem amigável para o usuário
+      if (error.message?.includes('captcha') || error.message?.includes('configuração')) {
+        setSignupError('Erro temporário no sistema. Nossa equipe técnica foi notificada. Por favor, tente novamente mais tarde.');
+      } else {
+        setSignupError(error.message || 'Ocorreu um erro durante o cadastro');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -65,6 +76,14 @@ const Signup = () => {
             error={signupError}
             isLoading={isLoading || isSubmitting}
           />
+          
+          {technicalError && (
+            <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded text-xs text-yellow-800 dark:text-yellow-300 font-mono">
+              <p className="font-semibold mb-1">Informação técnica (para suporte):</p>
+              <code>{technicalError}</code>
+            </div>
+          )}
+          
           <div className="mt-4 text-center text-sm">
             <p className="text-muted-foreground">
               Já possui uma conta?{' '}
