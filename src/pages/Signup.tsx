@@ -22,7 +22,7 @@ const Signup = () => {
     setSignupError(error);
   }, [error]);
 
-  const handleSubmit = async (e: React.FormEvent, captchaToken?: string) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Signup form submitted");
     
@@ -31,7 +31,7 @@ const Signup = () => {
     const password = (form.elements.namedItem('password') as HTMLInputElement).value;
     
     try {
-      await signUp(email, password, captchaToken);
+      await signUp(email, password);
     } catch (error) {
       console.error("Error in signup process:", error);
       // Error is already handled in the AuthContext

@@ -11,19 +11,9 @@ import { PasswordInput } from './PasswordInput';
 import { checkPasswordStrength } from '@/utils/passwordStrength';
 
 interface SignupFormProps {
-  onSubmit: (e: React.FormEvent, captchaToken?: string) => Promise<void>;
+  onSubmit: (e: React.FormEvent) => Promise<void>;
   error?: string | null;
   isLoading?: boolean;
-}
-
-// Define uma interface window personalizada para acessar os métodos do Turnstile
-declare global {
-  interface Window {
-    turnstile?: {
-      render: (container: string | HTMLElement, options: any) => string;
-      reset: (widgetId: string) => void;
-    };
-  }
 }
 
 export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormProps) => {
@@ -32,10 +22,7 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
   const [passwordsMatch, setPasswordsMatch] = useState(true);
-  const [captchaToken, setCaptchaToken] = useState<string | undefined>(undefined);
   const [formIsValid, setFormIsValid] = useState(false);
-  const captchaContainerRef = useRef<HTMLDivElement>(null);
-  const [widgetId, setWidgetId] = useState<string | null>(null);
   
   // Verifica a força da senha e se as senhas coincidem
   useEffect(() => {
@@ -54,87 +41,28 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
 
   // Valida o formulário completo
   useEffect(() => {
-    // Consoles para debugging
-    console.log('Email válido?', email && email.includes('@') && email.includes('.'));
-    console.log('Senha válida?', password && password.length >= 6);
-    console.log('Confirmação válida?', confirmPassword && password === confirmPassword);
-    console.log('Captcha token?', !!captchaToken);
-    console.log('Força da senha:', passwordStrength);
-    
     const isEmailValid = email && email.includes('@') && email.includes('.');
     const isPasswordValid = password && password.length >= 6;
     const isPasswordStrengthValid = passwordStrength === 'medium' || passwordStrength === 'strong';
     const isConfirmPasswordValid = confirmPassword && password === confirmPassword;
     
-    // Modificado: Tornar o formulário válido sem exigir o CAPTCHA para desbloquear o botão
     const isValid = isEmailValid && 
                     isPasswordValid && 
                     isPasswordStrengthValid && 
                     isConfirmPasswordValid;
     
-    console.log('Formulário válido:', isValid);
     setFormIsValid(isValid);
-  }, [email, password, confirmPassword, passwordStrength, captchaToken]);
-
-  // Carrega e inicializa o Cloudflare Turnstile (CAPTCHA)
-  useEffect(() => {
-    // Só inicializa o CAPTCHA se o script Turnstile já estiver carregado
-    const initTurnstile = () => {
-      if (window.turnstile && captchaContainerRef.current) {
-        const widgetId = window.turnstile.render(captchaContainerRef.current, {
-          sitekey: '0x4AAAAAAAl7U18OnlWbOmhR', // Sitekey do Cloudflare Turnstile (não sensível)
-          callback: function(token: string) {
-            console.log("Captcha verificado com sucesso!");
-            setCaptchaToken(token);
-          },
-        });
-        setWidgetId(widgetId);
-      }
-    };
-
-    // Verifica se o script já está carregado
-    if (window.turnstile) {
-      initTurnstile();
-    } else {
-      // Carrega o script do Turnstile
-      const script = document.createElement('script');
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-      script.async = true;
-      script.defer = true;
-      script.onload = initTurnstile;
-      document.head.appendChild(script);
-    }
-
-    return () => {
-      // Limpa o widget ao desmontar o componente
-      if (window.turnstile && widgetId) {
-        window.turnstile.reset(widgetId);
-      }
-    };
-  }, []);
-
-  // Reset do CAPTCHA quando ocorrer um erro
-  useEffect(() => {
-    if (error && window.turnstile && widgetId) {
-      window.turnstile.reset(widgetId);
-      setCaptchaToken(undefined);
-    }
-  }, [error, widgetId]);
+  }, [email, password, confirmPassword, passwordStrength]);
 
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Formulário submetido!');
-    console.log('Email:', email);
-    console.log('Senha válida:', password.length >= 6);
-    console.log('Senhas coincidem:', password === confirmPassword);
-    console.log('Captcha token:', captchaToken);
     
     if (password !== confirmPassword) {
       setPasswordsMatch(false);
       return;
     }
     
-    await onSubmit(e, captchaToken);
+    await onSubmit(e);
   };
 
   return (
@@ -181,11 +109,6 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
           confirmPassword={confirmPassword} 
         />
       </div>
-
-      {/* Container para o CAPTCHA */}
-      <div className="flex justify-center my-4">
-        <div ref={captchaContainerRef} className="captcha-container"></div>
-      </div>
       
       {error && (
         <div className="bg-destructive/10 p-3 rounded-md border border-destructive/30">
@@ -207,7 +130,6 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
       {/* Status do formulário para debug */}
       <div className="mt-2 text-xs text-muted-foreground">
         <p>Status do formulário: {formIsValid ? 'Válido' : 'Inválido'}</p>
-        <p className="text-gray-500">O CAPTCHA será verificado ao enviar o formulário</p>
       </div>
     </form>
   );

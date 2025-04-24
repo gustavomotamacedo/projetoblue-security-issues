@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { checkPasswordStrength } from '@/utils/passwordStrength';
 
@@ -39,7 +38,7 @@ export const authService = {
     return { isValid: true };
   },
 
-  async signUp(email: string, password: string, captchaToken?: string) {
+  async signUp(email: string, password: string) {
     return supabase.auth.signUp({
       email,
       password,
@@ -47,8 +46,7 @@ export const authService = {
         data: {
           role: 'analyst',
           is_approved: false
-        },
-        captchaToken: captchaToken
+        }
       }
     });
   },

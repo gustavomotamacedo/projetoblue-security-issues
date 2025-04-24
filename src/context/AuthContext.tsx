@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +10,7 @@ import { profileService } from '@/services/profileService';
 
 interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, captchaToken?: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -64,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setupAuth();
   }, []);
 
-  const signUp = async (email: string, password: string, captchaToken?: string) => {
+  const signUp = async (email: string, password: string) => {
     try {
       updateState({ isLoading: true, error: null });
       
@@ -79,20 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // Verificar se o captchaToken foi fornecido
-      if (!captchaToken) {
-        updateState({ 
-          error: "Por favor, complete a verificação CAPTCHA antes de enviar."
-        });
-        toast({
-          title: "Verificação necessária",
-          description: "Por favor, complete a verificação CAPTCHA antes de enviar o formulário.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const { data, error } = await authService.signUp(email, password, captchaToken);
+      const { data, error } = await authService.signUp(email, password);
 
       if (error) {
         let errorMessage = 'Falha ao criar usuário';
@@ -105,15 +91,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           errorMessage = 'Email inválido: ' + error.message;
         } else if (error.message.includes('database')) {
           errorMessage = 'Erro de banco de dados: Falha ao criar perfil do usuário.';
-        } else if (error.message.includes('captcha')) {
-          errorMessage = 'Verificação de captcha necessária. Por favor, tente novamente.';
-          updateState({ error: errorMessage });
-          toast({
-            title: "Erro de captcha",
-            description: errorMessage,
-            variant: "destructive"
-          });
-          return;
         }
         
         updateState({ error: errorMessage });
