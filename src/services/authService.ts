@@ -61,7 +61,7 @@ export const authService = {
         passwordLength: password?.length || 0,
         captchaDisabled: true,
         supabaseConfig: {
-          url: supabase.supabaseUrl,
+          url: supabase.supabaseUrl.toString(), // Use toString() to access the protected property safely
           authEnabled: !!supabase.auth,
         }
       });
@@ -86,10 +86,10 @@ export const authService = {
       if (error) {
         console.error('Erro detalhado do Supabase Auth:', {
           message: error.message,
-          cause: error.cause,
           name: error.name,
           status: error.status,
           stack: error.stack
+          // Removed the 'cause' property since it doesn't exist on AuthError
         });
         
         // Tratamento específico para erros de CAPTCHA
@@ -128,8 +128,8 @@ export const authService = {
       console.error('Erro detalhado durante o cadastro:', {
         message: error.message,
         name: error.name,
-        stack: error.stack,
-        cause: error.cause
+        stack: error.stack
+        // Removed the 'cause' property
       });
       throw error;
     }
