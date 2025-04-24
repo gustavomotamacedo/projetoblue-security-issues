@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { checkPasswordStrength } from '@/utils/passwordStrength';
 
@@ -43,6 +42,17 @@ export const authService = {
     console.log('Iniciando processo de cadastro:', { email });
     
     try {
+      // Log completo da configuração de auth sendo usada
+      console.log('Configuração para cadastro:', {
+        email,
+        passwordLength: password?.length || 0,
+        captchaDisabled: true,
+        supabaseConfig: {
+          url: supabase.supabaseUrl.toString(), // Use toString() to access the URL safely
+          authEnabled: !!supabase.auth,
+        }
+      });
+      
       // Verificar se o usuário já existe antes de tentar criar
       const { data: existingUser } = await supabase
         .from('profiles')
@@ -54,17 +64,6 @@ export const authService = {
         console.error('Usuário já existe:', existingUser);
         throw new Error('Este email já está cadastrado.');
       }
-      
-      // Log completo da configuração de auth sendo usada
-      console.log('Configuração para cadastro:', {
-        email,
-        passwordLength: password?.length || 0,
-        captchaDisabled: true,
-        supabaseConfig: {
-          url: supabase.supabaseUrl.toString(), // Use toString() to access the protected property safely
-          authEnabled: !!supabase.auth,
-        }
-      });
       
       // Tenta criar o usuário no Supabase Auth com opção de CAPTCHA explicitamente desativada
       console.log('Enviando dados para Supabase Auth com CAPTCHA explicitamente desativado...');
