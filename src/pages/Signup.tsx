@@ -11,6 +11,7 @@ const Signup = () => {
   const { signUp, isAuthenticated, error, isLoading } = useAuth();
   const navigate = useNavigate();
   const [signupError, setSignupError] = useState<string | null>(error);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   React.useEffect(() => {
     if (isAuthenticated) {
@@ -25,23 +26,27 @@ const Signup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Signup form submitted");
-    
-    const form = e.target as HTMLFormElement;
-    const email = (form.elements.namedItem('email') as HTMLInputElement).value;
-    const password = (form.elements.namedItem('password') as HTMLInputElement).value;
-    const confirmPassword = (form.elements.namedItem('confirm-password') as HTMLInputElement).value;
-    
-    if (password !== confirmPassword) {
-      setSignupError('Senhas não conferem');
-      return;
-    }
+    setIsSubmitting(true);
     
     try {
-      console.log('Enviando dados para cadastro:', { email });
+      const form = e.target as HTMLFormElement;
+      const email = (form.elements.namedItem('email') as HTMLInputElement).value;
+      const password = (form.elements.namedItem('password') as HTMLInputElement).value;
+      const confirmPassword = (form.elements.namedItem('confirm-password') as HTMLInputElement).value;
+      
+      if (password !== confirmPassword) {
+        setSignupError('Senhas não conferem');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      console.log('Validações do formulário passaram, enviando dados para cadastro:', { email });
       await signUp(email, password);
     } catch (error: any) {
-      console.error("Error in signup process:", error);
+      console.error("Erro capturado no componente Signup:", error);
       setSignupError(error.message || 'Ocorreu um erro durante o cadastro');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -58,7 +63,7 @@ const Signup = () => {
           <SignupForm 
             onSubmit={handleSubmit} 
             error={signupError}
-            isLoading={isLoading}
+            isLoading={isLoading || isSubmitting}
           />
           <div className="mt-4 text-center text-sm">
             <p className="text-muted-foreground">

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +27,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const setupAuth = async () => {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, currentSession) => {
+          console.log('Auth state changed:', event, currentSession?.user?.email);
+          
           updateState({
             user: currentSession?.user || null,
             isLoading: false,
@@ -37,22 +40,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (event === 'SIGNED_IN' && currentSession?.user) {
             setTimeout(async () => {
-              const profile = await profileService.fetchUserProfile(currentSession.user.id);
-              updateState({ profile });
+              try {
+                const profile = await profileService.fetchUserProfile(currentSession.user.id);
+                console.log('Profile fetched after sign in:', profile);
+                updateState({ profile });
+              } catch (error) {
+                console.error('Error fetching profile after sign in:', error);
+              }
             }, 0);
           }
         }
       );
 
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      updateState({
-        user: currentSession?.user || null,
-        isLoading: false,
-      });
+      try {
+        console.log('Checking for existing session...');
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log('Existing session:', currentSession?.user?.email || 'None');
+        
+        updateState({
+          user: currentSession?.user || null,
+          isLoading: false,
+        });
 
-      if (currentSession?.user) {
-        const profile = await profileService.fetchUserProfile(currentSession.user.id);
-        updateState({ profile });
+        if (currentSession?.user) {
+          try {
+            const profile = await profileService.fetchUserProfile(currentSession.user.id);
+            console.log('Profile fetched from existing session:', profile);
+            updateState({ profile });
+          } catch (error) {
+            console.error('Error fetching profile from existing session:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+        updateState({ isLoading: false });
       }
 
       return () => {
@@ -65,10 +86,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string) => {
     try {
+      console.log('AuthContext: Iniciando processo de cadastro');
       updateState({ isLoading: true, error: null });
       
+      // Validar os dados antes de enviar para o Supabase
       const validation = authService.validateSignUpData({ email, password });
       if (!validation.isValid) {
+        console.error('Erro de validação:', validation.error);
         updateState({ error: validation.error });
         toast({
           title: "Erro de validação",
@@ -78,9 +102,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
+      console.log('AuthContext: Dados validados, enviando para o serviço de autenticação');
+      
+      // Chamar o serviço para criar o usuário
       const { data, error } = await authService.signUp(email, password);
 
       if (error) {
+        console.error('Erro no Supabase auth.signUp:', error);
+        
         let errorMessage = 'Falha ao criar usuário';
         
         if (error.message.includes('already registered')) {
@@ -93,6 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           errorMessage = 'Erro de banco de dados: Falha ao criar perfil do usuário.';
         }
         
+        console.error('Erro traduzido:', errorMessage);
         updateState({ error: errorMessage });
         toast({
           title: "Erro de cadastro",
@@ -103,14 +133,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
+        console.log('Usuário criado com sucesso:', data.user.id);
         toast({
           title: "Cadastro realizado",
           description: "Usuário criado com sucesso! Aguarde a aprovação do administrador para acessar o sistema.",
           variant: "default"
         });
         navigate('/login');
+      } else {
+        console.error('Usuário não foi criado, dados incompletos:', data);
+        throw new Error('Falha ao criar usuário: dados incompletos retornados');
       }
     } catch (error: any) {
+      console.error('Erro não tratado no processo de cadastro:', error);
       const errorMessage = error.message || 'Ocorreu um erro inesperado durante o cadastro.';
       updateState({ error: errorMessage });
       toast({
@@ -118,6 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: errorMessage,
         variant: "destructive"
       });
+      throw error; // Re-throw para captura no componente
     } finally {
       updateState({ isLoading: false });
     }
@@ -131,6 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Email e senha são obrigatórios');
       }
       
+      console.log('AuthContext: Iniciando login para:', email);
       const { data, error } = await authService.signIn(email, password);
       
       if (error) {
@@ -146,15 +183,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        const profile = await profileService.fetchUserProfile(data.user.id);
-        if (!profile || !profile.is_approved || !profile.is_active) {
+        console.log('Login bem-sucedido para:', email);
+        try {
+          const profile = await profileService.fetchUserProfile(data.user.id);
+          console.log('Perfil obtido após login:', profile);
+          
+          if (!profile || !profile.is_approved || !profile.is_active) {
+            console.log('Perfil não aprovado ou inativo, fazendo logout:', profile);
+            await authService.signOut();
+            throw new Error('Sua conta está aguardando aprovação do administrador. Por favor, tente novamente mais tarde.');
+          }
+        } catch (profileError) {
+          console.error('Erro ao verificar perfil após login:', profileError);
           await authService.signOut();
-          throw new Error('Sua conta está aguardando aprovação do administrador. Por favor, tente novamente mais tarde.');
+          throw profileError;
         }
+      } else {
+        console.error('Login falhou, dados incompletos:', data);
+        throw new Error('Falha no login: dados incompletos retornados');
       }
       
       navigate('/');
     } catch (error: any) {
+      console.error('Erro durante o login:', error);
       updateState({ error: error.message || 'Erro ao fazer login' });
       toast({
         title: "Erro de autenticação",
@@ -172,6 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await authService.signOut();
       navigate('/login');
     } catch (error: any) {
+      console.error('Erro ao fazer logout:', error);
       toast({
         title: "Erro ao sair",
         description: error.message || 'Ocorreu um erro ao tentar sair.',
