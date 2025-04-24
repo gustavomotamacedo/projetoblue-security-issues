@@ -49,7 +49,7 @@ export const authService = {
         passwordLength: password?.length || 0,
         captchaDisabled: true,
         supabaseConfig: {
-          url: supabase.auth.getClient().config.supabaseUrl, // Safely access URL
+          url: supabase.auth.url, // Usar a propriedade url que está acessível
           authEnabled: !!supabase.auth,
         }
       });
@@ -73,7 +73,7 @@ export const authService = {
         password,
         options: {
           data: {
-            role: 'analyst',
+            role: 'analyst', // Garantir que role seja um dos valores do enum user_role
             is_approved: false
           },
           captchaToken: null, // Explicitamente definindo como nulo para desativar CAPTCHA
