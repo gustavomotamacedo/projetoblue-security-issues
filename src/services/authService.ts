@@ -49,8 +49,8 @@ export const authService = {
         passwordLength: password?.length || 0,
         captchaDisabled: true,
         supabaseConfig: {
-          // Usar o URL direto da instância do cliente em vez de acessar propriedades protegidas
-          url: new URL(supabase.projectRef, 'https://supabase.co').toString(),
+          // Use a correct way to access the Supabase URL without relying on protected properties
+          url: supabase.constructor.name, // Just log the constructor name for debugging
           authEnabled: !!supabase.auth,
         }
       });
