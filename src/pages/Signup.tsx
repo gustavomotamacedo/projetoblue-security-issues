@@ -29,12 +29,19 @@ const Signup = () => {
     const form = e.target as HTMLFormElement;
     const email = (form.elements.namedItem('email') as HTMLInputElement).value;
     const password = (form.elements.namedItem('password') as HTMLInputElement).value;
+    const confirmPassword = (form.elements.namedItem('confirm-password') as HTMLInputElement).value;
+    
+    if (password !== confirmPassword) {
+      setSignupError('Senhas não conferem');
+      return;
+    }
     
     try {
+      console.log('Enviando dados para cadastro:', { email });
       await signUp(email, password);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in signup process:", error);
-      // Error is already handled in the AuthContext
+      setSignupError(error.message || 'Ocorreu um erro durante o cadastro');
     }
   };
 

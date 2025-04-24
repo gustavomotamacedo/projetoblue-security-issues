@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { checkPasswordStrength } from '@/utils/passwordStrength';
 
@@ -39,16 +40,25 @@ export const authService = {
   },
 
   async signUp(email: string, password: string) {
-    return supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          role: 'analyst',
-          is_approved: false
+    console.log('Iniciando processo de cadastro:', { email });
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            role: 'analyst',
+            is_approved: false
+          }
         }
-      }
-    });
+      });
+      
+      console.log('Resposta do cadastro:', { data, error });
+      return { data, error };
+    } catch (error) {
+      console.error('Erro durante o cadastro:', error);
+      throw error;
+    }
   },
 
   async signIn(email: string, password: string) {
