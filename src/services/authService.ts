@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { checkPasswordStrength } from '@/utils/passwordStrength';
 
@@ -48,41 +47,19 @@ export const authService = {
         email,
         passwordLength: password?.length || 0,
         captchaDisabled: true,
-        supabaseConfig: {
-          // Use a correct way to access the Supabase URL without relying on protected properties
-          url: supabase.constructor.name, // Just log the constructor name for debugging
-          authEnabled: !!supabase.auth,
-        }
       });
       
-      // Verificar se o usuário já existe antes de tentar criar
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('email', email)
-        .single();
-      
-      if (existingUser) {
-        console.error('Usuário já existe:', existingUser);
-        throw new Error('Este email já está cadastrado.');
-      }
-      
-      // Tenta criar o usuário no Supabase Auth com opção de CAPTCHA explicitamente desativada
-      console.log('Enviando dados para Supabase Auth com CAPTCHA explicitamente desativado...');
+      // Tenta criar o usuário no Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            role: 'analyst', // Garantir que role seja um dos valores do enum user_role
+            role: 'analyst',
             is_approved: false
-          },
-          captchaToken: null, // Explicitamente definindo como nulo para desativar CAPTCHA
+          }
         }
       });
-      
-      // Log detalhado da resposta
-      console.log('Resposta completa do Supabase Auth:', JSON.stringify(data, null, 2));
       
       if (error) {
         console.error('Erro detalhado do Supabase Auth:', {
@@ -90,14 +67,7 @@ export const authService = {
           name: error.name,
           status: error.status,
           stack: error.stack
-          // Removed the 'cause' property since it doesn't exist on AuthError
         });
-        
-        // Tratamento específico para erros de CAPTCHA
-        if (error.message.includes('captcha')) {
-          console.error('Erro de CAPTCHA detectado apesar da desativação:', error);
-          throw new Error('Erro na configuração do CAPTCHA do sistema. Por favor, entre em contato com o suporte técnico.');
-        }
         
         // Traduz os erros mais comuns do Supabase
         if (error.message.includes('already registered')) {
@@ -108,7 +78,6 @@ export const authService = {
           throw new Error('Problema com o email: ' + error.message);
         }
         
-        // Se chegou aqui, é um erro não específico
         throw error;
       }
       
@@ -130,7 +99,6 @@ export const authService = {
         message: error.message,
         name: error.name,
         stack: error.stack
-        // Removed the 'cause' property
       });
       throw error;
     }
