@@ -22,7 +22,7 @@ export function Header() {
     setTheme(theme === 'dark' ? 'light' : 'dark', e);
   };
 
-  const userInitial = profile?.username?.charAt(0).toUpperCase() || 'U';
+  const userInitial = profile?.email?.charAt(0).toUpperCase() || 'U';
   const roleName = {
     'admin': 'Administrador',
     'tech': 'Técnico',
@@ -52,7 +52,7 @@ export function Header() {
                 <AvatarFallback>{userInitial}</AvatarFallback>
               </Avatar>
               <div className="hidden md:block">
-                <p className="text-sm font-medium">{profile?.username}</p>
+                <p className="text-sm font-medium">{profile?.email}</p>
                 <p className="text-xs text-muted-foreground">{roleName}</p>
               </div>
             </div>
