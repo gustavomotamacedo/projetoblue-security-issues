@@ -43,15 +43,15 @@ export const authService = {
     console.log('Iniciando processo de cadastro:', { email });
     
     try {
-      // Simplificando a estrutura de dados enviada para o Supabase
-      // Removendo campos desnecessários e garantindo apenas o essencial
+      // Estrutura de dados simplificada para o Supabase
+      // Enviando apenas o necessário sem campos redundantes
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            role: 'analyst'
-            // Removendo is_approved para usar o valor padrão definido na função handle_new_user
+            role: 'analyst' 
+            // Não precisamos incluir is_approved, pois está definido como true por padrão na função handle_new_user
           }
         }
       });
@@ -65,11 +65,11 @@ export const authService = {
         });
         
         // Traduz os erros mais comuns do Supabase
-        if (error.message.includes('already registered')) {
+        if (error.message?.includes('already registered')) {
           throw new Error('Este email já está cadastrado.');
-        } else if (error.message.includes('password')) {
+        } else if (error.message?.includes('password')) {
           throw new Error('Problema com a senha: ' + error.message);
-        } else if (error.message.includes('email')) {
+        } else if (error.message?.includes('email')) {
           throw new Error('Problema com o email: ' + error.message);
         }
         

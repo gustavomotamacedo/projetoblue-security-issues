@@ -29,6 +29,7 @@ const Signup = () => {
     console.log("Signup form submitted");
     setIsSubmitting(true);
     setTechnicalError(null);
+    setSignupError(null);
     
     try {
       const form = e.target as HTMLFormElement;

@@ -1,4 +1,3 @@
-
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { authService } from '@/services/authService';
@@ -16,7 +15,7 @@ export function useAuthActions(updateState: (state: any) => void) {
       const validation = authService.validateSignUpData({ email, password });
       if (!validation.isValid) {
         console.error('Erro de validação:', validation.error);
-        updateState({ error: validation.error });
+        updateState({ error: validation.error, isLoading: false });
         toast({
           title: "Erro de validação",
           description: validation.error,
@@ -48,7 +47,7 @@ export function useAuthActions(updateState: (state: any) => void) {
         }
         
         console.error('Erro traduzido:', errorMessage);
-        updateState({ error: errorMessage });
+        updateState({ error: errorMessage, isLoading: false });
         toast({
           title: "Erro de cadastro",
           description: errorMessage,
@@ -72,13 +71,13 @@ export function useAuthActions(updateState: (state: any) => void) {
     } catch (error: any) {
       console.error('Erro não tratado no processo de cadastro:', error);
       const errorMessage = error.message || 'Ocorreu um erro inesperado durante o cadastro.';
-      updateState({ error: errorMessage });
+      updateState({ error: errorMessage, isLoading: false });
       toast({
         title: "Erro no processo de cadastro",
         description: errorMessage,
         variant: "destructive"
       });
-      throw error;
+      // Não relançamos o erro aqui para evitar quebras na interface
     } finally {
       updateState({ isLoading: false });
     }
