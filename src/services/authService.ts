@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { checkPasswordStrength } from '@/utils/passwordStrength';
 
@@ -49,14 +50,14 @@ export const authService = {
         captchaDisabled: true,
       });
       
-      // Tenta criar o usuário no Supabase Auth
+      // Tenta criar o usuário no Supabase Auth com is_approved = true
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             role: 'analyst',
-            is_approved: false
+            is_approved: true  // Mudado de false para true
           }
         }
       });

@@ -3,7 +3,7 @@
 -- Verificar se o trigger e a função existem
 DROP FUNCTION IF EXISTS public.handle_new_user CASCADE;
 
--- Recriar a função com a conversão correta para o tipo user_role
+-- Recriar a função com a conversão correta para o tipo user_role e com is_approved = true por padrão
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -16,7 +16,7 @@ BEGIN
     new.email,
     (new.raw_user_meta_data->>'role')::user_role, -- Explicitamente converter para o tipo user_role
     true,
-    COALESCE((new.raw_user_meta_data->>'is_approved')::boolean, false)
+    COALESCE((new.raw_user_meta_data->>'is_approved')::boolean, true) -- Alterado para true como padrão
   );
   RETURN new;
 END;

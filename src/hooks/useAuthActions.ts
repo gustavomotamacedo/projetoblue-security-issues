@@ -61,7 +61,7 @@ export function useAuthActions(updateState: (state: any) => void) {
         console.log('Usuário criado com sucesso:', data.user.id);
         toast({
           title: "Cadastro realizado",
-          description: "Usuário criado com sucesso! Aguarde a aprovação do administrador para acessar o sistema.",
+          description: "Usuário criado com sucesso! Você já pode fazer login.",
           variant: "default"
         });
         navigate('/login');
@@ -113,10 +113,11 @@ export function useAuthActions(updateState: (state: any) => void) {
           const profile = await profileService.fetchUserProfile(data.user.id);
           console.log('Perfil obtido após login:', profile);
           
-          if (!profile || !profile.is_approved || !profile.is_active) {
-            console.log('Perfil não aprovado ou inativo, fazendo logout:', profile);
+          // Removendo a verificação de is_approved - permitir qualquer usuário ativo
+          if (!profile || !profile.is_active) {
+            console.log('Perfil inativo, fazendo logout:', profile);
             await authService.signOut();
-            throw new Error('Sua conta está aguardando aprovação do administrador. Por favor, tente novamente mais tarde.');
+            throw new Error('Sua conta está desativada. Entre em contato com o administrador.');
           }
         } catch (profileError) {
           console.error('Erro ao verificar perfil após login:', profileError);

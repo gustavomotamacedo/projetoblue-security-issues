@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AlertCircle, Info } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
 import { PasswordMatch } from './PasswordMatch';
@@ -96,13 +96,6 @@ export const SignupForm = ({ onSubmit, error, isLoading = false }: SignupFormPro
 
   return (
     <form onSubmit={handleSubmitForm} className="space-y-4">
-      <Alert className="mb-4 bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-800">
-        <Info className="h-4 w-4 text-blue-600 dark:text-blue-500" />
-        <AlertDescription className="text-sm text-blue-700 dark:text-blue-400">
-          Após o cadastro, sua conta precisará ser aprovada por um administrador antes de acessar o sistema.
-        </AlertDescription>
-      </Alert>
-      
       <div className="space-y-2">
         <Label htmlFor="email">E-mail</Label>
         <Input 
