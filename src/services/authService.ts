@@ -43,21 +43,15 @@ export const authService = {
     console.log('Iniciando processo de cadastro:', { email });
     
     try {
-      // Log completo da configuração de auth sendo usada
-      console.log('Configuração para cadastro:', {
-        email,
-        passwordLength: password?.length || 0,
-        captchaDisabled: true,
-      });
-      
-      // Tenta criar o usuário no Supabase Auth
+      // Simplificando a estrutura de dados enviada para o Supabase
+      // Removendo campos desnecessários e garantindo apenas o essencial
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            role: 'analyst',
-            is_approved: true  // Garantindo que is_approved seja true
+            role: 'analyst'
+            // Removendo is_approved para usar o valor padrão definido na função handle_new_user
           }
         }
       });

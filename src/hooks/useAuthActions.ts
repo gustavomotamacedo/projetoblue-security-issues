@@ -34,15 +34,15 @@ export function useAuthActions(updateState: (state: any) => void) {
         
         let errorMessage = 'Falha ao criar usuário';
         
-        if (error.message.includes('already registered')) {
+        if (error.message?.includes('already registered')) {
           errorMessage = 'Este email já está cadastrado.';
-        } else if (error.message.includes('password')) {
+        } else if (error.message?.includes('password')) {
           errorMessage = 'Senha inválida: ' + error.message;
-        } else if (error.message.includes('email')) {
+        } else if (error.message?.includes('email')) {
           errorMessage = 'Email inválido: ' + error.message;
-        } else if (error.message.includes('database')) {
+        } else if (error.message?.includes('database')) {
           errorMessage = 'Erro de banco de dados: Falha ao criar perfil do usuário.';
-        } else if (error.message.includes('captcha')) {
+        } else if (error.message?.includes('captcha')) {
           console.error('Erro de CAPTCHA:', error);
           errorMessage = 'Erro de configuração do sistema. Entre em contato com o administrador.';
         }
@@ -98,9 +98,9 @@ export function useAuthActions(updateState: (state: any) => void) {
       if (error) {
         let errorMessage = 'Erro ao fazer login';
         
-        if (error.message.includes('credentials')) {
+        if (error.message?.includes('credentials')) {
           errorMessage = 'Email ou senha incorretos.';
-        } else if (error.message.includes('disabled')) {
+        } else if (error.message?.includes('disabled')) {
           errorMessage = 'Esta conta está desativada. Entre em contato com o administrador.';
         }
         
