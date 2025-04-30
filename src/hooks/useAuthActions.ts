@@ -113,7 +113,7 @@ export function useAuthActions(updateState: (state: any) => void) {
           const profile = await profileService.fetchUserProfile(data.user.id);
           console.log('Perfil obtido após login:', profile);
           
-          // Removendo a verificação de is_approved - permitir qualquer usuário ativo
+          // Verificando apenas se o perfil está ativo
           if (!profile || !profile.is_active) {
             console.log('Perfil inativo, fazendo logout:', profile);
             await authService.signOut();

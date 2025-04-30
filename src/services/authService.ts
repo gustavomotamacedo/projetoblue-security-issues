@@ -50,14 +50,14 @@ export const authService = {
         captchaDisabled: true,
       });
       
-      // Tenta criar o usuário no Supabase Auth com is_approved = true
+      // Tenta criar o usuário no Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             role: 'analyst',
-            is_approved: true  // Mudado de false para true
+            is_approved: true  // Garantindo que is_approved seja true
           }
         }
       });
