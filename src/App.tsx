@@ -37,11 +37,11 @@ const App = () => (
             <BrowserRouter>
               <AuthProvider>
                 <Routes>
-                  {/* Rotas públicas (mantidas mas redirecionam para a Dashboard) */}
-                  <Route path="/login" element={<Navigate to="/" replace />} />
-                  <Route path="/signup" element={<Navigate to="/" replace />} />
+                  {/* Rotas públicas */}
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
                 
-                  {/* Rotas protegidas com bypass temporário */}
+                  {/* Rotas protegidas */}
                   <Route element={<AuthRoute><Layout /></AuthRoute>}>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/register-asset" element={<RegisterAsset />} />
