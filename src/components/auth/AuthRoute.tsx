@@ -1,6 +1,6 @@
 
 import { ReactNode, useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 
 interface AuthRouteProps {
@@ -20,11 +20,9 @@ export const AuthRoute = ({ children }: AuthRouteProps) => {
     );
   }
 
-  // Se não está autenticado, redireciona para a página de login
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  // Se está autenticado, renderiza as rotas protegidas
+  // MODO DE DESENVOLVIMENTO: Ignorando verificação de autenticação temporariamente
+  console.log("AVISO: Bypass de autenticação ativado - modo de desenvolvimento");
+  
+  // Renderiza as rotas sem verificação de autenticação
   return <>{children}</>;
 };
