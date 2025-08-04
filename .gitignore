@@ -31,3 +31,6 @@ dist-ssr
 .env.production.local  # overrides na produção
 .env.*                 # qualquer outro .env.<qualquer-coisa>
 !.env.example          # mas mantenha este modelo commitado
+.env.dev
+.env.production
+.env.development
