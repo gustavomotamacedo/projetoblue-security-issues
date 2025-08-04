@@ -22,4 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.env*
+
+# Environment variable files
+.env                   # arquivo principal de variáveis
+.env.local             # overrides locais
+.env.development.local # overrides no dev
+.env.test.local        # overrides no teste
+.env.production.local  # overrides na produção
+.env.*                 # qualquer outro .env.<qualquer-coisa>
+!.env.example          # mas mantenha este modelo commitado
